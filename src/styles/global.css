@@ -127,3 +127,130 @@ body {
   opacity: 0.45;
   cursor: not-allowed;
 }
+
+
+
+.sequencer {
+  margin-top: 25px;
+  padding: 20px;
+  background: #17141e;
+  border: 1px solid #302a39;
+  border-radius: 10px;
+}
+
+.sequencer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.sequencer-header h2 {
+  margin-top: 5px;
+}
+
+.eyebrow {
+  color: #a77aff;
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+
+.sequencer-controls {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+}
+
+.sequencer-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: #aaa0b9;
+  font-size: 11px;
+}
+
+.sequencer-controls input {
+  width: 65px;
+  padding: 8px;
+  color: white;
+  background: #211e28;
+  border: 1px solid #443950;
+  border-radius: 5px;
+}
+
+.sequencer-controls button {
+  padding: 9px 15px;
+  color: white;
+  background: #6841a5;
+  border: 1px solid #8b61c5;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.step-grid {
+  display: grid;
+  grid-template-columns: 90px repeat(16, minmax(15px, 1fr));
+  gap: 5px;
+  align-items: center;
+}
+
+.track-heading,
+.step-number {
+  color: #898294;
+  font-size: 10px;
+  text-align: center;
+}
+
+.track-row {
+  display: contents;
+}
+
+.track-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #ddd5e8;
+  font-size: 11px;
+}
+
+.track-label button {
+  padding: 3px 5px;
+  color: #aaa0b9;
+  background: #282330;
+  border: 1px solid #443950;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.track-label button.muted {
+  color: #ff7777;
+  border-color: #a64e5a;
+}
+
+.track-steps {
+  display: contents;
+}
+
+.step {
+  height: 30px;
+  padding: 0;
+  background: #25212d;
+  border: 1px solid #393342;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.step.beat-start {
+  border-left-color: #8964b5;
+}
+
+.step.active {
+  background: #7950b3;
+  border-color: #ad83ed;
+}
+
+.step.playing {
+  outline: 2px solid #ffffff;
+  outline-offset: 1px;
+}

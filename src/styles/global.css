@@ -1,0 +1,20 @@
+:root {
+    --black: #0C0B10;
+    --white: #E8E6EF;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    min-width: 900px;
+    min-height: 100vh;
+
+    background: var(--black);
+    color: var(--white);
+    
+    font-family: Arial, Helvetica, sans-serif;
+}

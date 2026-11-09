@@ -1,4 +1,5 @@
 import AudioTest from "./components/AudioTest";
+import TransportTest from "./components/TransportTest";
 
 function App() {
   return (
@@ -7,6 +8,7 @@ function App() {
       <p>Prototype 0.1</p>
 
       <AudioTest />
+      <TransportTest />
     </main>
   );
 }

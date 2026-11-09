@@ -47,21 +47,6 @@ class AudioEngine {
         return this.initialized;
     }
 
-    // BPM Management
-    setBpm(bpm: number): void {
-        Tone.getTransport().bpm.value = bpm;
-    }
-
-    // Transport
-    play(): void {
-        Tone.getTransport().start();
-    }
-
-    stop(): void {
-        Tone.getTransport().stop();
-        Tone.getTransport().position = 0;
-    }
-
     // Master volume
     setMasterVolume(volume: number): void {
         this.master.gain.rampTo(volume, 0.05);

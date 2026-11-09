@@ -67,3 +67,63 @@ body {
   opacity: 0.5;
   cursor: wait;
 }
+
+
+
+.transport-test {
+  margin-top: 20px;
+  padding: 20px;
+  max-width: 500px;
+
+  background: #17141e;
+  border: 1px solid #302a39;
+  border-radius: 10px;
+}
+
+.transport-test h2 {
+  margin-bottom: 12px;
+  font-size: 18px;
+}
+
+.transport-test p {
+  margin-bottom: 18px;
+  color: #a99dbb;
+  font-size: 13px;
+}
+
+.transport-test-controls {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+}
+
+.transport-test-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #a99dbb;
+  font-size: 12px;
+}
+
+.transport-test-controls input {
+  width: 75px;
+  padding: 9px;
+  color: white;
+  background: #211e28;
+  border: 1px solid #443950;
+  border-radius: 6px;
+}
+
+.transport-test-controls button {
+  padding: 10px 18px;
+  color: white;
+  background: #6841a5;
+  border: 1px solid #8b61c5;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.transport-test-controls button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

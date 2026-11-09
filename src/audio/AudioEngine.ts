@@ -47,6 +47,11 @@ class AudioEngine {
         return this.initialized;
     }
 
+    // Expose master output
+    getMasterOutput(): Tone.Gain {
+        return this.master;
+    }
+
     // Master volume
     setMasterVolume(volume: number): void {
         this.master.gain.rampTo(volume, 0.05);

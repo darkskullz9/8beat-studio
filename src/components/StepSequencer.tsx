@@ -10,4 +10,12 @@ function StepSequencer() {
     const toggleMute = useSequencerStore((state) => state.toggleMute);
     const setCurrentStep = useSequencerStore((state) => state.setCurrentStep);
 
+    async function handlePlay() {
+        await audioEngine.initialize();
+
+        sequencerEngine.start(
+            () => useSequencerStore.getState().tracks,
+            (step) => setCurrentStep(step),
+        );
+    }
 }

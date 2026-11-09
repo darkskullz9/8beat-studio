@@ -1,5 +1,6 @@
 import AudioTest from "./components/AudioTest";
 import TransportTest from "./components/TransportTest";
+import StepSequencer from "./components/StepSequencer";
 
 function App() {
   return (
@@ -9,6 +10,7 @@ function App() {
 
       <AudioTest />
       <TransportTest />
+      <StepSequencer />
     </main>
   );
 }

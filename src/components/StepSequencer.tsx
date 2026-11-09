@@ -18,4 +18,13 @@ function StepSequencer() {
             (step) => setCurrentStep(step),
         );
     }
+
+    function handleStop(){
+        sequencerEngine.stop();
+        setCurrentStep(-1);
+    }
+
+    function handleBpmChange(value: number) {
+        transport.setBpm(value);
+    }
 }

@@ -15,8 +15,7 @@ class SequencerEngine {
 
         this.playing = true;
 
-        transport.scheduleRepeat(
-            (time, step) => {
+        transport.scheduleRepeat((time, step) => {
                 const tracks = getTracks();
 
                 // Update visual position
@@ -52,9 +51,7 @@ class SequencerEngine {
                             break;
                     }
                 });
-            },
-            "16n",
-            16,
+            }, "16n", 16, "drums"
         );
 
         transport.start();

@@ -2,7 +2,7 @@ export interface PianoNote {
     id: string;
     pitch: number;
     startStep: number;
-    durationStep: number;
+    durationSteps: number;
     velocity: number;
 }
 

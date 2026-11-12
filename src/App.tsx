@@ -1,7 +1,8 @@
-import AudioTest from "./components/AudioTest";
-import TransportTest from "./components/TransportTest";
+//import AudioTest from "./components/AudioTest";
+//import TransportTest from "./components/TransportTest";
 import StepSequencer from "./components/StepSequencer";
 import Sampler from "./components/Sampler/Sampler";
+import PianoRoll from "./components/PianoRoll";
 
 function App() {
   return (
@@ -9,10 +10,11 @@ function App() {
       <h1>8Beat Studio</h1>
       <p>Prototype 0.1</p>
 
-      <AudioTest />
-      <TransportTest />
+      {/* <AudioTest /> */}
+      {/*<TransportTest />*/}
       <Sampler />
       <StepSequencer />
+      <PianoRoll />
     </main>
   );
 }

@@ -423,3 +423,184 @@ body {
     flex-direction: column;
   }
 }
+
+
+
+/* =====================================
+   PIANO ROLL
+===================================== */
+
+.piano-roll {
+    background: #17171d;
+    border: 1px solid #30303a;
+    border-radius: 10px;
+    padding: 20px;
+    color: #f0f0f5;
+}
+
+.piano-roll-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.piano-roll-header h2 {
+    margin: 5px 0 0;
+}
+
+.piano-roll-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    color: #a5a5b5;
+}
+
+.piano-roll-clear {
+    background: #292933;
+    color: #f0f0f5;
+    border: 1px solid #41414e;
+    border-radius: 5px;
+    padding: 7px 12px;
+    cursor: pointer;
+}
+
+.piano-roll-clear:hover:not(:disabled) {
+    background: #7d48f7;
+}
+
+.piano-roll-clear:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.piano-roll-scroll {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.piano-roll-editor {
+    display: grid;
+    grid-template-columns: 55px minmax(720px, 1fr);
+    width: 100%;
+}
+
+/* Keyboard */
+
+.piano-roll-keyboard {
+    display: flex;
+    flex-direction: column;
+}
+
+.piano-roll-key {
+    height: 28px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 600;
+    border-bottom: 1px solid #30303a;
+}
+
+.piano-roll-key.white-key {
+    background: #dedee5;
+    color: #22222b;
+}
+
+.piano-roll-key.black-key {
+    background: #383842;
+    color: #ffffff;
+}
+
+/* Grid */
+
+.piano-roll-grid {
+    display: flex;
+    flex-direction: column;
+}
+
+.piano-roll-row {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(16, minmax(0, 1fr));
+    height: 28px;
+    box-sizing: border-box;
+    background: #202029;
+    border-bottom: 1px solid #30303a;
+}
+
+.piano-roll-row:nth-child(12n + 1) {
+    background: #292934;
+}
+
+.piano-roll-cell {
+    min-width: 0;
+    padding: 0;
+    border: none;
+    border-right: 1px solid #353540;
+    border-radius: 0;
+    background: transparent;
+    cursor: crosshair;
+}
+
+.piano-roll-cell:nth-child(4n) {
+    border-right: 2px solid #555565;
+}
+
+.piano-roll-cell:hover {
+    background: rgba(125, 72, 247, 0.25);
+}
+
+/* MIDI notes */
+
+.piano-roll-note {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    z-index: 2;
+    overflow: hidden;
+    padding: 0 5px;
+    border: 1px solid #a987ff;
+    border-radius: 4px;
+    background: #7d48f7;
+    color: white;
+    font-size: 10px;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.piano-roll-note:hover {
+    background: #a06fff;
+    border-color: #d0baff;
+}
+
+/* Footer */
+
+.piano-roll-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 14px;
+    color: #9292a2;
+    font-size: 11px;
+}
+
+@media (max-width: 600px) {
+    .piano-roll-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .piano-roll-info {
+        flex-wrap: wrap;
+    }
+
+    .piano-roll-footer {
+        flex-direction: column;
+    }
+}

@@ -44,7 +44,7 @@ function Sampler() {
 
     async function handlePreview(trackId: DrumType) {
         try {
-            await samplerEngine.play(trackId);
+            await samplerEngine.trigger(trackId);
             setStatus(`Previewing ${trackId}`);
         } catch (error) {
             console.error("Preview error:", error);

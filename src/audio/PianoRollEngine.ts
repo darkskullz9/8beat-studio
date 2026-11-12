@@ -13,7 +13,7 @@ class PianoRollEngine {
         this.synth.volume.value = -8;
     }
 
-    playStop(
+    playStep(
         notes: PianoNote[],
         step: number,
         time: number,

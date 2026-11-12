@@ -1,21 +1,15 @@
 import * as Tone from "tone";
 import { audioEngine } from "./AudioEngine";
-
+import type { DrumType } from "../types/sequencer";
 class SamplerEngine {
-    private player: Tone.Player | null = null;
-    private sampleName: string | null = null;
-    private loading = false;
+    private players = new Map<DrumType, Tone.Player>();
 
-    async loadSample(file: File): Promise<void> {
-        if (this.loading) {
-            throw new Error("A sample is already loading.");
-        }
+    async loadSample(trackId: DrumType, file: File): Promise<void> {
+        const supportedExtension = /\.(wav|mp3|ogg|flac)$/i.test(file.name);
 
-        if (!file.type.startsWith("audio")) {
+        if (!file.type.startsWith("audio/") && !supportedExtension) {
             throw new Error("Unsupported audio file.");
         }
-
-        this.loading = true;
 
         const objectUrl = URL.createObjectURL(file);
         const newPlayer = new Tone.Player();
@@ -26,59 +20,62 @@ class SamplerEngine {
             await newPlayer.load(objectUrl);
 
             // Replace new sample only if loading successed
-            this.player?.dispose();
+            const previousPlayer = this.players.get(trackId);
 
-            this.player = newPlayer;
-            this.sampleName = file.name;
+            previousPlayer?.stop();
+            previousPlayer?.dispose();
 
-            URL.revokeObjectURL(objectUrl);
+            this.players.set(trackId, newPlayer);
         } catch (error) {
             newPlayer.dispose();
-            URL.revokeObjectURL(objectUrl);
             throw error;
         } finally {
-            this.loading = false;
+            URL.revokeObjectURL(objectUrl);
         }
     }
 
-    async play(): Promise<void> {
-        if (!this.player) {
-            throw new Error("No sample loaded.");
+    play(trackId: DrumType, time?: number): void {
+        const player = this.players.get(trackId);
+
+        if (!player) return;
+
+        if (player.state === "started") {
+            player.stop();
         }
 
-        await audioEngine.initialize();
-
-        this.player.stop();
-        this.player.start();
+        player.start(time ?? Tone.now());
     }
 
-    stop(): void {
-        this.player?.stop();
+    stop(trackId: DrumType): void {
+        this.players.get(trackId)?.stop();
     }
 
-    setVolume(volume: number): void {
-        if (!this.player) return;
-
-        const safeVolume = Math.max(0, Math.min(1, volume));
-        const decibels = safeVolume === 0
-            ? -Infinity
-            : 20 * Math.log10(safeVolume);
-
-        this.player.volume.rampTo(decibels, 0.05);
+    hasSample(trackId: DrumType): boolean {
+        return this.players.has(trackId);
     }
 
-    getSampleName(): string | null {
-        return this.sampleName;
+    getSampleName(trackId: DrumType): string | null {
+        return this.players.get(trackId)?.loaded
+            ? this.sampleNames.get(trackId) ?? null
+            : null;
     }
 
-    get isLoaded(): boolean {
-        return this.player !== null;
+    private sampleNames = new Map<DrumType, string>();
+
+    setSampleName(trackId: DrumType, name: string): void {
+        this.sampleNames.set(trackId, name);
+    }
+
+    disposeTrack(trackId: DrumType): void {
+        this.players.get(trackId)?.dispose();
+        this.players.delete(trackId);
+        this.sampleNames.delete(trackId);
     }
 
     dispose(): void {
-        this.player?.dispose();
-        this.player = null;
-        this.sampleName =null;
+        this.players.forEach((player) => player.dispose());
+        this.players.clear();
+        this.sampleNames.clear();
     }
 }
 

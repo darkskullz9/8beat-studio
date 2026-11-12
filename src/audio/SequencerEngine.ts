@@ -19,16 +19,25 @@ class SequencerEngine {
             (time, step) => {
                 const tracks = getTracks();
 
-                // Actualize visual position
+                // Update visual position
                 onStepChange(step);
 
-                // Play active instruments
+                // Process each track
                 tracks.forEach((track) => {
+
+                    // Ignore muted tracks
+                    if(track.muted) return;
+
+                    // Ignore inactive steps.
+                    if(!track.steps[step]) return;
+
+                    // Use loaded sample if available.
                     if(samplerEngine.hasSample(track.id)) {
-                        samplerEngine.play(track.id, time);
+                        samplerEngine.trigger(track.id, time);
                         return;
                     }
 
+                    // Otherwise use built-in synthesizers
                     switch(track.id) {
                         case "kick":
                             audioEngine.playKick(time);

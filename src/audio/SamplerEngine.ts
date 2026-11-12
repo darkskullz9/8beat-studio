@@ -4,6 +4,7 @@ import type { DrumType } from "../types/sequencer";
 
 class SamplerEngine {
     private players = new Map<DrumType, Tone.Player>();
+    private sampleNames = new Map<DrumType, string>();
 
     async loadSample(trackId: DrumType, file: File): Promise<void> {
         const supportedExtension = /\.(wav|mp3|ogg|flac)$/i.test(file.name);
@@ -27,17 +28,23 @@ class SamplerEngine {
             previousPlayer?.dispose();
 
             this.players.set(trackId, newPlayer);
+            this.sampleNames.set(trackId, file.name);
         } catch (error) {
             newPlayer.dispose();
             throw error;
         } finally {
             URL.revokeObjectURL(objectUrl);
         }
-
-        this.setSampleName(trackId, file.name);
     }
 
-    play(trackId: DrumType, time?: number): void {
+    // Preview a sample from the interface.
+    async preview(trackId: DrumType): Promise<void> {
+        await audioEngine.initialize();
+        this.trigger(trackId);
+    }
+
+    // Trigger a sample at a precise audio time.
+    trigger(trackId: DrumType, time?: number): void {
         const player = this.players.get(trackId);
 
         if (!player) return;
@@ -63,12 +70,6 @@ class SamplerEngine {
             : null;
     }
 
-    private sampleNames = new Map<DrumType, string>();
-
-    setSampleName(trackId: DrumType, name: string): void {
-        this.sampleNames.set(trackId, name);
-    }
-
     disposeTrack(trackId: DrumType): void {
         this.players.get(trackId)?.dispose();
         this.players.delete(trackId);
@@ -77,6 +78,7 @@ class SamplerEngine {
 
     dispose(): void {
         this.players.forEach((player) => player.dispose());
+
         this.players.clear();
         this.sampleNames.clear();
     }

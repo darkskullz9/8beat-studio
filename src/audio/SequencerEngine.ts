@@ -1,5 +1,6 @@
 import { audioEngine } from "./AudioEngine";
 import { transport } from "./Transport";
+import { samplerEngine } from "./SamplerEngine";
 
 import type { DrumTrack } from "../types/sequencer";
 
@@ -23,7 +24,8 @@ class SequencerEngine {
 
                 // Play active instruments
                 tracks.forEach((track) => {
-                    if(track.muted || !track.steps[step]) {
+                    if(samplerEngine.hasSample(track.id)) {
+                        samplerEngine.play(track.id, time);
                         return;
                     }
 

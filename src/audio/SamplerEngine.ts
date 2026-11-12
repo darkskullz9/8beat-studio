@@ -1,6 +1,7 @@
 import * as Tone from "tone";
 import { audioEngine } from "./AudioEngine";
 import type { DrumType } from "../types/sequencer";
+
 class SamplerEngine {
     private players = new Map<DrumType, Tone.Player>();
 
@@ -32,6 +33,8 @@ class SamplerEngine {
         } finally {
             URL.revokeObjectURL(objectUrl);
         }
+
+        this.setSampleName(trackId, file.name);
     }
 
     play(trackId: DrumType, time?: number): void {

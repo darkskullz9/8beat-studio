@@ -1,56 +1,67 @@
 import { useState } from "react";
 import { samplerEngine } from "../../audio/SamplerEngine";
+import type { DrumType } from "../../types/sequencer";
+
+const sampleSlots: { id: DrumType; label: string }[] = [
+    { id: "kick", label: "Kick" },
+    { id: "snare", label: "Snare" },
+    { id: "hat", label: "Hat" },
+];
 
 function Sampler() {
-    const [sampleName, setSampleName] = useState<string | null>(null);
-    const [volume, setVolume] = useState(0.8);
-    const [loading, setLoading] = useState(false);
-    const [status, setStatus] = useState("No sample loaded");
+    const [sampleNames, setSampleNames] = useState<
+        Partial<Record<DrumType, string>>
+    >({});
+
+    const [loading, setLoading] = useState<DrumType | null>(null);
+    const [status, setStatus] = useState("Ready");
 
     async function handleFileChange(
-        event: React.ChangeEvent<HTMLInputElement>,
+        trackId: DrumType,
+        file?: File,
     ) {
-        const file = event.target.files?.[0];
-
         if(!file) return;
 
-        setLoading(true);
-        setStatus("Loading sample...");
+        setLoading(trackId);
+        setStatus(`Loading ${file.name}...`);
 
         try {
-            await samplerEngine.loadSample(file);
+            await samplerEngine.loadSample(trackId, file);
 
-            setSampleName(file.name);
-            setStatus("Sample ready");
+            setSampleNames((current) => ({
+                ...current,
+                [trackId]: file.name,
+            }));
+
+            setStatus(`${file.name} loaded`);
         } catch (error) {
             console.error("Sample loading error:", error);
-            setStatus("Unable to load sample");
+            setStatus(`Unable to load ${file.name}`);
         } finally {
-            setLoading(false);
-
-            // Allow to select the same file again
-            event.target.value = "";
+            setLoading(null);
         }
     }
 
-    async function handlePlay() {
+    async function handlePreview(trackId: DrumType) {
         try {
-            await samplerEngine.play();
-            setStatus("Playing");
+            await samplerEngine.play(trackId);
+            setStatus(`Previewing ${trackId}`);
         } catch (error) {
-            console.error("Sample playback error:", error);
-            setStatus("Playback failed");
+            console.error("Preview error:", error);
+            setStatus("Preview failed");
         }
     }
 
-    function handleStop() {
-        samplerEngine.stop();
-        setStatus("Stopped");
-    }
+    function handleRemove(trackId: DrumType) {
+        samplerEngine.disposeTrack(trackId);
 
-    function handleVolumeChange(value: number) {
-        setVolume(value);
-        samplerEngine.setVolume(value);
+        setSampleNames((current) => {
+            const updated = { ...current };
+            delete updated[trackId];
+            return updated;
+        })
+
+        setStatus(`${trackId} deleted`);
     }
 
     return (
@@ -64,50 +75,54 @@ function Sampler() {
                 <span className="sampler-status">{status}</span>
             </div>
 
-            <label className="sample-import">
-                <input 
-                    type="file" 
-                    accept=".wav,.mp3,.ogg,.flac,audio/*" 
-                    onChange={handleFileChange}
-                    disabled={loading}
-                />
+            <div className="sample-slots">
+                {sampleSlots.map((slot) => {
+                    const loadedName = sampleNames[slot.id];
+                    const isLoading = loading === slot.id;
 
-                <span>
-                    {loading ? "Loading..." : "Import sample"}
-                </span>
-            </label>
+                    return (
+                        <div className="sampler-slot" key={slot.id}>
+                            <div className="sampler-slot-info">
+                                <strong>{slot.label}</strong>
+                                <span title={loadedName ?? "No sample loaded"}>
+                                    {loadedName ?? "No sample loaded"}
+                                </span>
+                            </div>
 
-            <div className="sample-info">
-                <strong>{sampleName ?? "No sample selected"}</strong>
-            </div>
+                            <div className="sampler-slot-actions">
+                                <label className="sample-import-btn">
+                                    {isLoading ? "Loading..." : "Import"}
+                                    <input
+                                        type="file"
+                                        accept=".wav,.mp3,.ogg,.flac,audio/*"
+                                        disabled={loading !== null}
+                                        onChange={(event) => {
+                                            void handleFileChange(
+                                                slot.id,
+                                                event.target.files![0],
+                                            );
+                                            event.target.value = "";
+                                        }}
+                                    />
+                                </label>
 
-            <div className="sampler-controls">
-                <button
-                    onClick={() => void handlePlay()}
-                    disabled={!samplerEngine.isLoaded || loading}
-                >
-                    Play
-                </button>
+                                <button
+                                    onClick={() => void handlePreview(slot.id)}
+                                    disabled={!loadedName || loading !== null}
+                                >
+                                    Preview
+                                </button>
 
-                <button
-                    onClick={handleStop}
-                    disabled={!samplerEngine.isLoaded}
-                >
-                    Stop
-                </button>
-
-                <label className="sampler-volume">
-                    Volume
-                    <input 
-                        type="range" 
-                        min="0" 
-                        max="1"
-                        step="0.01"
-                        value={volume}
-                        onChange={(event) => handleVolumeChange(Number(event.target.value))} 
-                    />
-                    <span>{Math.round(volume * 100)}%</span>
-                </label>
+                                <button
+                                    onClick={() => handleRemove(slot.id)}
+                                    disabled={!loadedName || loading !== null}
+                                >
+                                    Remove
+                                </button>
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
         </section>
     );

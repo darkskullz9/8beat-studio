@@ -589,6 +589,74 @@ body {
     background: rgba(125, 72, 247, 0.55);
 }
 
+
+/* Piano Roll - Note Selection */
+
+.piano-roll-note.selected {
+    background: #a987ff;
+    border: 2px solid #e1d4ff;
+    box-shadow: 0 0 8px rgba(125, 72, 247, 0.6);
+    z-index: 3;
+}
+
+.piano-roll-properties {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    align-items: end;
+    gap: 20px;
+    margin-top: 16px;
+    padding: 16px;
+    background: #202029;
+    border: 1px solid #383842;
+    border-radius: 8px;
+}
+
+.piano-roll-properties-header {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    color: #f0f0f5;
+    font-size: 13px;
+}
+
+.piano-roll-properties-header span {
+    color: #a5a5b5;
+    font-size: 11px;
+}
+
+.piano-roll-property {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    color: #c9c9d5;
+    font-size: 12px;
+}
+
+.piano-roll-property input {
+    width: 100%;
+    accent-color: #7d48f7;
+    cursor: pointer;
+}
+
+.piano-roll-delete {
+    padding: 8px 12px;
+    border: 1px solid #713b4b;
+    border-radius: 5px;
+    background: #3b222c;
+    color: #ff9eae;
+    cursor: pointer;
+}
+
+.piano-roll-delete:hover {
+    background: #713b4b;
+}
+
+@media (max-width: 700px) {
+    .piano-roll-properties {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* Footer */
 
 .piano-roll-footer {

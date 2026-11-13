@@ -5,8 +5,9 @@ import {
     PIANO_ROLL_MAX_PITCH,
     PIANO_ROLL_STEPS,
 } from "../types/pianoRoll";
+import type { PianoNote } from "../types/pianoRoll";
 
-import { useState } from "react";
+import React, { useState } from "react";
 
 const NOTE_NAMES = [
     "C", "C#", "D", "D#", "E", "F", 
@@ -17,6 +18,24 @@ const pitches = Array.from(
     { length: PIANO_ROLL_MAX_PITCH - PIANO_ROLL_MIN_PITCH + 1 },
     (_, index) => PIANO_ROLL_MAX_PITCH - index
 );
+
+type DragMode = "move" | "resize";
+
+interface DragState {
+    noteId: string;
+    mode: DragMode;
+    initialX: number;
+    initialY: number;
+    initialStartStep: number;
+    initialPitch: number;
+    initialDuration: number;
+}
+
+const clamp = (
+    value: number, 
+    min: number, 
+    max: number
+) => Math.max(min, Math.min(max, value));
 
 
 function getNoteName(pitch: number): string {
@@ -32,13 +51,83 @@ function isBlackKey(pitch: number): boolean {
 
 function PianoRoll() {
     const notes = usePianoRollStore((state) => state.notes);
-    const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
-    const updateNote = usePianoRollStore((state) => state.updateNote);
-    const selectedNote = notes.find((note) => note.id === selectedNoteId);
     const addNote = usePianoRollStore((state) => state.addNote);
+    const updateNote = usePianoRollStore((state) => state.updateNote);
     const currentStep = usePianoRollStore((state) => state.currentStep);
     const removeNote = usePianoRollStore((state) => state.removeNote);
     const clearNotes = usePianoRollStore((state) => state.clearNotes);
+
+    const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+    const [dragState, setDragState] = useState<DragState | null>(null);
+
+    const selectedNote = notes.find(
+        (note) => note.id === selectedNoteId
+    );
+
+    const handleNotePointerDown = (
+        event: React.PointerEvent<HTMLElement>,
+        note: PianoNote,
+        mode: DragMode
+    ) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        setSelectedNoteId(note.id);
+
+        setDragState({
+            noteId: note.id,
+            mode,
+            initialX:event.clientX,
+            initialY:event.clientY,
+            initialStartStep: note.startStep,
+            initialPitch: note.pitch,
+            initialDuration: note.durationSteps,
+        });
+    };
+
+    const handlePointerMove = (event: React.PointerEvent<HTMLElement>) => {
+        if (!dragState) return;
+
+        const grid = event.currentTarget.getBoundingClientRect();
+
+        const stepWidth = grid.width / PIANO_ROLL_STEPS;
+        const rowHeight = 28;
+
+        const deltaSteps = Math.round((event.clientX - dragState.initialX) / stepWidth);
+
+        if (dragState.mode === "resize") {
+            const maxDuration = PIANO_ROLL_STEPS - dragState.initialStartStep;
+
+            const duration = clamp(
+                dragState.initialDuration + deltaSteps,
+                1,
+                maxDuration
+            );
+
+            updateNote(dragState.noteId, {durationSteps: duration,});
+
+            return;
+        }
+
+        const deltaPitch = -Math.round((event.clientY - dragState.initialY) / rowHeight);
+
+        updateNote(dragState.noteId, {
+            startStep: clamp(
+                dragState.initialStartStep + deltaSteps,
+                0,
+                PIANO_ROLL_STEPS - dragState.initialDuration
+            ),
+            pitch: clamp(
+                dragState.initialPitch + deltaPitch,
+                PIANO_ROLL_MIN_PITCH,
+                PIANO_ROLL_MAX_PITCH
+            ),
+        });
+    };
+
+    const handlePointerUp = () => {
+        setDragState(null);
+    };
     
     return (
         <section className="piano-roll">
@@ -80,7 +169,13 @@ function PianoRoll() {
                     </div>
 
                     {/* Note grid */}
-                    <div className="piano-roll-grid">
+                    <div 
+                        className="piano-roll-grid"
+                        onPointerMove={handlePointerMove}
+                        onPointerUp={handlePointerUp}
+                        onPointerCancel={handlePointerUp}
+                        onLostPointerCapture={handlePointerUp}
+                    >
                         {pitches.map((pitch) => {
                             const rowNotes = notes.filter(
                                 (note) => note.pitch === pitch
@@ -118,9 +213,22 @@ function PianoRoll() {
                                                 width: `${(note.durationSteps / PIANO_ROLL_STEPS) * 100}%`,
                                             }}
                                             title={`${getNoteName(note.pitch)} - Velocity: ${note.velocity}`}
-                                            onClick={() => setSelectedNoteId(note.id)}
+                                            onPointerDown={(event) => handleNotePointerDown(
+                                                event, 
+                                                note,
+                                                "move"
+                                            )}
+
                                         >
                                             {getNoteName(note.pitch)}
+
+                                            <span 
+                                                className="piano-roll-resize-handle"
+                                                onPointerDown={(event) => {
+                                                    event.stopPropagation();
+                                                    handleNotePointerDown(event, note, "resize");
+                                                }}
+                                            />
                                         </button>
                                     ))}
                                 </div>

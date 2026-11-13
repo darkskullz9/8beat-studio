@@ -45,6 +45,8 @@ const clamp = (
     max: number
 ) => Math.max(min, Math.min(max, value));
 
+type SnapDivision = 1 | 2 | 4;
+
 function getNoteName(pitch: number): string {
     const noteName = NOTE_NAMES[pitch % 12];
     const octave = Math.floor(pitch / 12) - 1;
@@ -68,6 +70,7 @@ function PianoRoll() {
     const [dragState, setDragState] = useState<DragState | null>(null);
     const [zoom, setZoom] = useState(1);
     const [selectedNoteIds, setSelectedNoteIds] = useState<string[]>([]);
+    const [snapDivision, setSnapDivision] = useState<SnapDivision>(1);
 
     const selectedNote = notes.find(
         (note) => note.id === selectedNoteId
@@ -139,7 +142,8 @@ function PianoRoll() {
         const stepWidth = grid.clientWidth / PIANO_ROLL_STEPS;
         const rowHeight = 28;
 
-        const deltaSteps = Math.round((event.clientX - dragState.initialX) / stepWidth);
+        const rawDeltaSteps = Math.round((event.clientX - dragState.initialX) / stepWidth);
+        const deltaSteps = snapStep(rawDeltaSteps);
 
         // Resize note duration
         if (dragState.mode === "resize") {
@@ -169,11 +173,15 @@ function PianoRoll() {
         const minPitch = Math.min(...initialNotes.map((item) => item.pitch));
         const maxPitch = Math.max(...initialNotes.map((item) => item.pitch));
 
+        const minAllowedDelta = Math.ceil(-minStart / snapDivision) * snapDivision;
+        const maxAllowedDelta = Math.floor((PIANO_ROLL_STEPS - maxEnd) / snapDivision) * snapDivision;
+
         const boundedSteps = clamp(
             deltaSteps, 
-            -minStart, 
-            PIANO_ROLL_STEPS - maxEnd
+            minAllowedDelta,
+            maxAllowedDelta
         );
+
         const boundedPitch = clamp(
             deltaPitch, 
             PIANO_ROLL_MIN_PITCH - minPitch, 
@@ -190,6 +198,10 @@ function PianoRoll() {
 
     const handlePointerUp = () => {
         setDragState(null);
+    };
+
+    const snapStep = (step: number): number => {
+        return Math.round(step / snapDivision) * snapDivision;
     };
     
     return (
@@ -226,6 +238,21 @@ function PianoRoll() {
                     >
                         Clear
                     </button>
+                </div>
+
+                <div className="piano-roll-snap">
+                    <label htmlFor="snap-division">Snap</label>
+                    <select
+                        id="snap-division"
+                        value={snapDivision}
+                        onChange={(event) => setSnapDivision(
+                            Number(event.target.value) as SnapDivision
+                        )}
+                    >
+                        <option value={1}>1/16</option>
+                        <option value={2}>1/8</option>
+                        <option value={4}>1/4</option>
+                    </select>
                 </div>
             </div>
 

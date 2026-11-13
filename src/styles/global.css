@@ -718,6 +718,23 @@ body {
     color: white;
 }
 
+
+/* Snap */
+.piano-roll-snap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.piano-roll-snap select {
+    background: #24242c;
+    color: #ffffff;
+    border: 1px solid #444450;
+    border-radius: 5px;
+    padding: 5px 8px;
+    cursor: pointer;
+}
+
 /* Footer */
 
 .piano-roll-footer {

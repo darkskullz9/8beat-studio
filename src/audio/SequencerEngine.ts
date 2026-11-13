@@ -58,8 +58,20 @@ class SequencerEngine {
 
         transport.scheduleRepeat((time, step) => {
                 const notes = usePianoRollStore.getState().notes;
-                pianoRollEngine.playStep(notes, step, time,transport.getBpm());
-            }, "16n", 16, "piano-roll"
+                const pianoRollState = usePianoRollStore.getState();
+
+                pianoRollState.setCurrentStep(step);
+
+                pianoRollEngine.playStep(
+                    notes, 
+                    step, 
+                    time,
+                    transport.getBpm()
+                );
+            }, 
+            "16n", 
+            16, 
+            "piano-roll"
         );
 
         transport.start();
@@ -70,6 +82,8 @@ class SequencerEngine {
 
         transport.stop();
         transport.clearEvents();
+
+        usePianoRollStore.getState().setCurrentStep(0);
 
         this.playing = false;
     }

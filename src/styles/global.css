@@ -657,6 +657,33 @@ body {
     }
 }
 
+
+/* Note Resize Handle */
+.piano-roll-note {
+    touch-action: none;
+    user-select: none;
+    cursor: grab;
+}
+
+.piano-roll-note:active {
+    cursor: grabbing;
+}
+
+.piano-roll-resize-handle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 7px;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.25);
+    cursor: ew-resize;
+}
+
+.piano-roll-resize-handle:hover {
+    background: rgba(255, 255, 255, 0.65);
+}
+
+
 /* Footer */
 
 .piano-roll-footer {

@@ -21,6 +21,13 @@ const pitches = Array.from(
 
 type DragMode = "move" | "resize";
 
+interface DragNoteSnapshot {
+    id: string;
+    pitch: number;
+    startStep: number;
+    durationSteps: number;
+}
+
 interface DragState {
     noteId: string;
     mode: DragMode;
@@ -29,6 +36,7 @@ interface DragState {
     initialStartStep: number;
     initialPitch: number;
     initialDuration: number;
+    initialNotes: DragNoteSnapshot[];
 }
 
 const clamp = (
@@ -59,6 +67,7 @@ function PianoRoll() {
     const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
     const [dragState, setDragState] = useState<DragState | null>(null);
     const [zoom, setZoom] = useState(1);
+    const [selectedNoteIds, setSelectedNoteIds] = useState<string[]>([]);
 
     const selectedNote = notes.find(
         (note) => note.id === selectedNoteId
@@ -73,58 +82,109 @@ function PianoRoll() {
     ) => {
         event.preventDefault();
         event.stopPropagation();
+
         pianoRollGridRef.current?.setPointerCapture(event.pointerId);
 
+        if (event.shiftKey) {
+            const alreadySelected = selectedNoteIds.includes(note.id);
+
+            const nextSelection = alreadySelected
+                ? selectedNoteIds.filter((id) => id !== note.id)
+                : [...selectedNoteIds, note.id];
+
+            setSelectedNoteIds(nextSelection);
+            setSelectedNoteId(alreadySelected
+                ? nextSelection[nextSelection.length - 1] ?? null
+                : note.id
+            );
+
+            setDragState(null);
+            return;
+        }
+
+        const nextSelection = selectedNoteIds.includes(note.id)
+            ? selectedNoteIds
+            : [note.id]
+
+        setSelectedNoteIds(nextSelection);
         setSelectedNoteId(note.id);
+
+        const notesToDrag = mode === "resize"
+            ? [note]
+            : notes.filter((item) => nextSelection.includes(item.id));
 
         setDragState({
             noteId: note.id,
             mode,
-            initialX:event.clientX,
-            initialY:event.clientY,
+            initialX: event.clientX,
+            initialY: event.clientY,
             initialStartStep: note.startStep,
             initialPitch: note.pitch,
             initialDuration: note.durationSteps,
+            initialNotes: notesToDrag.map((item) => ({
+                id: item.id,
+                pitch: item.pitch,
+                startStep: item.startStep,
+                durationSteps: item.durationSteps,
+            })),
         });
     };
 
     const handlePointerMove = (event: React.PointerEvent<HTMLElement>) => {
         if (!dragState) return;
 
-        const grid = event.currentTarget.getBoundingClientRect();
+        const grid = pianoRollGridRef.current;
+        if (!grid) return;
 
-        const stepWidth = grid.width / PIANO_ROLL_STEPS;
+        const stepWidth = grid.clientWidth / PIANO_ROLL_STEPS;
         const rowHeight = 28;
 
         const deltaSteps = Math.round((event.clientX - dragState.initialX) / stepWidth);
 
+        // Resize note duration
         if (dragState.mode === "resize") {
-            const maxDuration = PIANO_ROLL_STEPS - dragState.initialStartStep;
+            const target = dragState.initialNotes[0];
+            if (!target) return;
 
             const duration = clamp(
-                dragState.initialDuration + deltaSteps,
+                target.durationSteps + deltaSteps,
                 1,
-                maxDuration
+                PIANO_ROLL_STEPS - target.startStep
             );
 
-            updateNote(dragState.noteId, {durationSteps: duration,});
+            updateNote(target.id, {durationSteps: duration,});
 
             return;
         }
 
+        // Move notes group
+        const initialNotes = dragState.initialNotes;
+        if (initialNotes.length === 0) return;
+
         const deltaPitch = -Math.round((event.clientY - dragState.initialY) / rowHeight);
 
-        updateNote(dragState.noteId, {
-            startStep: clamp(
-                dragState.initialStartStep + deltaSteps,
-                0,
-                PIANO_ROLL_STEPS - dragState.initialDuration
-            ),
-            pitch: clamp(
-                dragState.initialPitch + deltaPitch,
-                PIANO_ROLL_MIN_PITCH,
-                PIANO_ROLL_MAX_PITCH
-            ),
+        const minStart = Math.min(...initialNotes.map((item) => item.startStep));
+        const maxEnd = Math.max(...initialNotes.map((item) => item.startStep + item.durationSteps));
+
+        const minPitch = Math.min(...initialNotes.map((item) => item.pitch));
+        const maxPitch = Math.max(...initialNotes.map((item) => item.pitch));
+
+        const boundedSteps = clamp(
+            deltaSteps, 
+            -minStart, 
+            PIANO_ROLL_STEPS - maxEnd
+        );
+        const boundedPitch = clamp(
+            deltaPitch, 
+            PIANO_ROLL_MIN_PITCH - minPitch, 
+            PIANO_ROLL_MAX_PITCH - maxPitch
+        );
+
+        initialNotes.forEach((item) => {
+            updateNote(item.id, {
+                startStep: item.startStep + boundedSteps,
+                pitch: item.pitch + boundedPitch,
+            });
         });
     };
 
@@ -229,7 +289,7 @@ function PianoRoll() {
                                         <button
                                             key={note.id}
                                             className={`piano-roll-note ${
-                                                selectedNoteId === note.id ? "selected" : ""
+                                                selectedNoteIds.includes(note.id) ? "selected" : ""
                                             }`}
                                             style={{
                                                 left: `${(note.startStep / PIANO_ROLL_STEPS) * 100}%`,
@@ -309,11 +369,13 @@ function PianoRoll() {
                     <button 
                         className="piano-roll-delete"
                         onClick={() => {
-                            removeNote(selectedNote.id);
+                            selectedNoteIds.forEach((id) => removeNote(id));
+
+                            setSelectedNoteIds([]);
                             setSelectedNoteId(null);
                         }}
                     >
-                        Delete Note
+                        Delete Selection
                     </button>
                 </div>
             )}

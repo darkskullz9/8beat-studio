@@ -684,6 +684,40 @@ body {
 }
 
 
+/* Piano Roll - Horizontal Zoom */
+
+.piano-roll-zoom {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.piano-roll-zoom span {
+    margin-right: 4px;
+    color: #a5a5b5;
+    font-size: 11px;
+}
+
+.piano-roll-zoom button {
+    padding: 5px 9px;
+    border: 1px solid #41414e;
+    border-radius: 4px;
+    background: #292933;
+    color: #c9c9d5;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.piano-roll-zoom button:hover {
+    background: #383842;
+}
+
+.piano-roll-zoom button.zoom-active {
+    background: #7d48f7;
+    border-color: #a987ff;
+    color: white;
+}
+
 /* Footer */
 
 .piano-roll-footer {

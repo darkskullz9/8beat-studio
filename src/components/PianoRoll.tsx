@@ -7,7 +7,7 @@ import {
 } from "../types/pianoRoll";
 import type { PianoNote } from "../types/pianoRoll";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 
 const NOTE_NAMES = [
     "C", "C#", "D", "D#", "E", "F", 
@@ -37,7 +37,6 @@ const clamp = (
     max: number
 ) => Math.max(min, Math.min(max, value));
 
-
 function getNoteName(pitch: number): string {
     const noteName = NOTE_NAMES[pitch % 12];
     const octave = Math.floor(pitch / 12) - 1;
@@ -59,10 +58,13 @@ function PianoRoll() {
 
     const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
     const [dragState, setDragState] = useState<DragState | null>(null);
+    const [zoom, setZoom] = useState(1);
 
     const selectedNote = notes.find(
         (note) => note.id === selectedNoteId
     );
+
+    const pianoRollGridRef = useRef<HTMLDivElement>(null);
 
     const handleNotePointerDown = (
         event: React.PointerEvent<HTMLElement>,
@@ -71,6 +73,7 @@ function PianoRoll() {
     ) => {
         event.preventDefault();
         event.stopPropagation();
+        pianoRollGridRef.current?.setPointerCapture(event.pointerId);
 
         setSelectedNoteId(note.id);
 
@@ -141,6 +144,21 @@ function PianoRoll() {
                     <span>2 Octaves</span>
                     <span>16 Steps</span>
 
+                    <div className="piano-roll-zoom">
+                        <span>Zoom</span>
+
+                        {[1, 2, 4].map((level) => (
+                            <button
+                                key={level}
+                                className={zoom === level ? "zoom-active" : ""}
+                                onClick={() => setZoom(level)}
+                                aria-label={`Zoom ${level}x`}
+                            >
+                                {level}x
+                            </button>
+                        ))}
+                    </div>
+
                     <button 
                         className="piano-roll-clear"
                         onClick={clearNotes}
@@ -152,8 +170,12 @@ function PianoRoll() {
             </div>
 
             <div className="piano-roll-scroll">
-                <div className="piano-roll-editor">
-
+                <div 
+                    className="piano-roll-editor"
+                    style={{
+                        gridTemplateColumns: `55px minmax(${720 * zoom}px, 1fr)`,
+                    }}
+                >
                     {/* Virtual keyboard labels */}
                     <div className="piano-roll-keyboard">
                         {pitches.map((pitch) => (
@@ -170,6 +192,7 @@ function PianoRoll() {
 
                     {/* Note grid */}
                     <div 
+                        ref={pianoRollGridRef}
                         className="piano-roll-grid"
                         onPointerMove={handlePointerMove}
                         onPointerUp={handlePointerUp}

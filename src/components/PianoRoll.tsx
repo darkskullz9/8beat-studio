@@ -30,6 +30,7 @@ function isBlackKey(pitch: number): boolean {
 function PianoRoll() {
     const notes = usePianoRollStore((state) => state.notes);
     const addNote = usePianoRollStore((state) => state.addNote);
+    const currentStep = usePianoRollStore((state) => state.currentStep);
     const removeNote = usePianoRollStore((state) => state.removeNote);
     const clearNotes = usePianoRollStore((state) => state.clearNotes);
 
@@ -90,11 +91,11 @@ function PianoRoll() {
                                         (_, step) => (
                                             <button
                                                 key={step}
-                                                className="piano-roll-cell"
+                                                className={`piano-roll-cell ${
+                                                    currentStep === step ? "active-step" : ""
+                                                }`}
                                                 aria-label={`Add ${getNoteName(pitch)} at step ${step + 1}`}
-                                                onClick={() => 
-                                                    addNote(pitch, step)
-                                                }
+                                                onClick={() => addNote(pitch, step)}
                                             />
                                         )
                                     )}

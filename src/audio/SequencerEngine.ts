@@ -1,6 +1,8 @@
 import { audioEngine } from "./AudioEngine";
 import { transport } from "./Transport";
 import { samplerEngine } from "./SamplerEngine";
+import { pianoRollEngine } from "./PianoRollEngine";
+import { usePianoRollStore } from "../stores/pianoRollStore";
 
 import type { DrumTrack } from "../types/sequencer";
 
@@ -15,8 +17,7 @@ class SequencerEngine {
 
         this.playing = true;
 
-        transport.scheduleRepeat(
-            (time, step) => {
+        transport.scheduleRepeat((time, step) => {
                 const tracks = getTracks();
 
                 // Update visual position
@@ -52,9 +53,13 @@ class SequencerEngine {
                             break;
                     }
                 });
-            },
-            "16n",
-            16,
+            }, "16n", 16, "drums"
+        );
+
+        transport.scheduleRepeat((time, step) => {
+                const notes = usePianoRollStore.getState().notes;
+                pianoRollEngine.playStep(notes, step, time,transport.getBpm());
+            }, "16n", 16, "piano-roll"
         );
 
         transport.start();

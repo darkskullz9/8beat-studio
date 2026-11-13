@@ -150,14 +150,15 @@ function PianoRoll() {
             const target = dragState.initialNotes[0];
             if (!target) return;
 
+            const maxDuration = PIANO_ROLL_STEPS - target.startStep;
+
             const duration = clamp(
                 target.durationSteps + deltaSteps,
-                1,
-                PIANO_ROLL_STEPS - target.startStep
+                snapDivision,
+                maxDuration
             );
 
-            updateNote(target.id, {durationSteps: duration,});
-
+            updateNote(target.id, {durationSteps: duration});
             return;
         }
 
@@ -306,7 +307,11 @@ function PianoRoll() {
                                                     currentStep === step ? "active-step" : ""
                                                 }`}
                                                 aria-label={`Add ${getNoteName(pitch)} at step ${step + 1}`}
-                                                onClick={() => addNote(pitch, step)}
+                                                onClick={() => 
+                                                    addNote(pitch, 
+                                                    snapStep(step), 
+                                                    snapDivision
+                                                )}
                                             />
                                         )
                                     )}

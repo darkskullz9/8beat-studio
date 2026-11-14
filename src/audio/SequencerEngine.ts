@@ -71,7 +71,10 @@ class SequencerEngine {
     transport.scheduleRepeat((time, tick) => {
             const pianoRollState = usePianoRollStore.getState();
 
-            pianoRollState.setCurrentTick(tick);
+            // Update the UI every 16th note instead of every tick.
+            if(tick % 6 === 0) {
+                pianoRollState.setCurrentTick(tick);
+            }
 
             pianoRollEngine.playTick(
                 pianoRollState.notes,

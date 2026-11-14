@@ -5,8 +5,13 @@ import {
     PIANO_ROLL_MIN_PITCH,
     PIANO_ROLL_MAX_PITCH,
     PIANO_ROLL_DEFAULT_NOTE_DURATION,
+    PIANO_ROLL_PATTERN_LENGTHS,
 } from "../types/pianoRoll";
-import type { PianoNote } from "../types/pianoRoll";
+
+import type { 
+    PianoNote, 
+    PianoRollPatternLength, 
+} from "../types/pianoRoll";
 
 import React, { useRef, useState } from "react";
 
@@ -64,6 +69,10 @@ function PianoRoll() {
     const currentTick = usePianoRollStore((state) => state.currentTick);
     const removeNote = usePianoRollStore((state) => state.removeNote);
     const clearNotes = usePianoRollStore((state) => state.clearNotes);
+    const patternLengthBars = usePianoRollStore((state) => state.patternLengthBars);
+    const setPatternLengthBars = usePianoRollStore((state) => state.setPatternLengthBars);
+
+    const totalTicks = patternLengthBars * PIANO_ROLL_TICKS_PER_BAR;
 
     const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
     const [dragState, setDragState] = useState<DragState | null>(null);
@@ -135,7 +144,7 @@ function PianoRoll() {
         const grid = pianoRollGridRef.current;
         if (!grid) return;
 
-        const tickWidth = grid.clientWidth / PIANO_ROLL_TICKS_PER_BAR;
+        const tickWidth = grid.clientWidth / totalTicks;
         const rowHeight = 28;
 
         const rawDeltaTicks = Math.round(
@@ -149,7 +158,7 @@ function PianoRoll() {
             const target = dragState.initialNotes[0];
             if (!target) return;
 
-            const maxDuration = PIANO_ROLL_TICKS_PER_BAR - target.startTick;
+            const maxDuration = totalTicks - target.startTick;
 
             const duration = clamp(
                 target.durationTicks + deltaTicks,
@@ -188,7 +197,7 @@ function PianoRoll() {
         const minAllowedDelta = Math.ceil(-minStart / snapDivision) * snapDivision;
 
         const maxAllowedDelta = Math.floor(
-            (PIANO_ROLL_TICKS_PER_BAR - maxEnd) / snapDivision
+            (totalTicks - maxEnd) / snapDivision
         ) * snapDivision;
 
         const boundedTicks = clamp(
@@ -229,7 +238,53 @@ function PianoRoll() {
 
                 <div className="piano-roll-info">
                     <span>2 Octaves</span>
-                    <span>1 Bar · 96 Ticks</span>
+                    <span>
+                        {patternLengthBars} {patternLengthBars > 1 ? "Bars" : "Bar"}
+                        {" - "}
+                        {totalTicks} Ticks
+                    </span>
+
+                    <div className="piano-roll-snap">
+                        <label htmlFor="pattern-length">Length</label>
+                        <select
+                            id="pattern-length"
+                            value={patternLengthBars}
+                            onChange={(event) => {
+                                const length = Number(event.target.value) as PianoRollPatternLength;
+
+                                setPatternLengthBars(length);
+
+                                setSelectedNoteId(null);
+                                setSelectedNoteIds([]);
+                            }}
+                        >
+
+                            {PIANO_ROLL_PATTERN_LENGTHS.map((length) => (
+                                <option key={length} value={length}>
+                                    {length} {length > 1 ? "bars" : "bar"}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="piano-roll-snap">
+                        <label htmlFor="snap-division">Snap</label>
+                        <select
+                            id="snap-division"
+                            value={snapDivision}
+                            onChange={(event) => setSnapDivision(
+                                Number(event.target.value) as SnapDivision
+                            )}
+                        >
+                            <option value={24}>1/4</option>
+                            <option value={16}>1/4T</option>
+                            <option value={12}>1/8</option>
+                            <option value={8}>1/8T</option>
+                            <option value={6}>1/16</option>
+                            <option value={4}>1/16T</option>
+                            <option value={3}>1/32</option>
+                        </select>
+                    </div>
 
                     <div className="piano-roll-zoom">
                         <span>Zoom</span>
@@ -259,28 +314,15 @@ function PianoRoll() {
                     </button>
                 </div>
 
-                <div className="piano-roll-snap">
-                    <label htmlFor="snap-division">Snap</label>
-                    <select
-                        id="snap-division"
-                        value={snapDivision}
-                        onChange={(event) => setSnapDivision(
-                            Number(event.target.value) as SnapDivision
-                        )}
-                    >
-                        <option value={24}>1/4</option>
-                        <option value={16}>1/4T</option>
-                        <option value={12}>1/8</option>
-                        <option value={8}>1/8T</option>
-                        <option value={6}>1/16</option>
-                        <option value={4}>1/16T</option>
-                        <option value={3}>1/32</option>
-                    </select>
-                </div>
             </div>
 
             <div className="piano-roll-scroll">
-                <div className="piano-roll-editor">
+                <div 
+                    className="piano-roll-editor"
+                    style={{
+                        gridTemplateColumns: `55px minmax(${720 * zoom * patternLengthBars}px, 1fr)`
+                    }}
+                >
                     {/* Virtual keyboard labels */}
                     <div className="piano-roll-keyboard">
                         {pitches.map((pitch) => (
@@ -313,10 +355,13 @@ function PianoRoll() {
                                 <div
                                     key={pitch}
                                     className="piano-roll-row"
+                                    style={{
+                                        gridTemplateColumns: `repeat(${totalTicks}, minmax(0, 1fr))`
+                                    }}
                                 >
                                     {/* Empty grid cells */}
                                     {Array.from(
-                                        { length: PIANO_ROLL_TICKS_PER_BAR },
+                                        { length: totalTicks },
                                         (_, tick) => (
                                             <button
                                                 key={tick}
@@ -343,13 +388,8 @@ function PianoRoll() {
                                                 selectedNoteIds.includes(note.id) ? "selected" : ""
                                             }`}
                                             style={{
-                                                left: `${(
-                                                    note.startTick / PIANO_ROLL_TICKS_PER_BAR
-                                                ) * 100}%`,
-
-                                                width: `${(
-                                                    note.durationTicks / PIANO_ROLL_TICKS_PER_BAR
-                                                ) * 100}%`,
+                                                left: `${(note.startTick / totalTicks) * 100}%`,
+                                                width: `${(note.durationTicks / totalTicks) * 100}%`,
                                             }}
                                             title={`${getNoteName(note.pitch)} - Velocity: ${note.velocity}`}
                                             onPointerDown={(event) => handleNotePointerDown(
@@ -384,7 +424,9 @@ function PianoRoll() {
                         <span>
                             {getNoteName(selectedNote.pitch)}
                             {" , "}
-                            Tick {selectedNote.startTick + 1}
+                            Bar {Math.floor(selectedNote.startTick / PIANO_ROLL_TICKS_PER_BAR) + 1}
+                            {" - "}
+                            Tick {(selectedNote.startTick % PIANO_ROLL_TICKS_PER_BAR) + 1}
                         </span>
                     </div>
 
@@ -397,7 +439,7 @@ function PianoRoll() {
                             id="note-duration"
                             type="range"
                             min={snapDivision}
-                            max={PIANO_ROLL_TICKS_PER_BAR - selectedNote.startTick}
+                            max={totalTicks - selectedNote.startTick}
                             value={selectedNote.durationTicks}
                             onChange={(event) => updateNote(selectedNote.id, {
                                 durationTicks: Number(event.target.value),

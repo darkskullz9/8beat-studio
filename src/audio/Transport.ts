@@ -5,6 +5,7 @@ class Transport {
     private bpm = 120;
     private tickIndex = 0;
     private readonly ticksPerBar = 96;
+    private loopLengthBars = 1;
     private isScheduled = false;
 
     private callbacks = new Map<string, TickCallback>();
@@ -17,6 +18,15 @@ class Transport {
 
     getBpm(): number {
         return this.bpm;
+    }
+
+    // Manage loop length
+    setLoopLengthBars(bars: number): void {
+        this.loopLengthBars = Math.max(1, Math.floor(bars));
+
+        const totalTicks = this.ticksPerBar * this.loopLengthBars;
+
+        this.tickIndex %= totalTicks;
     }
 
     // Register a callback executed on every tick
@@ -36,7 +46,9 @@ class Transport {
                 listener(time, currentTick);
             });
 
-            this.tickIndex = (this.tickIndex + 1) % this.ticksPerBar;
+            const totalTicks = this.ticksPerBar * this.loopLengthBars;
+
+            this.tickIndex = (this.tickIndex + 1) % totalTicks;
         }, "64t");
 
         this.isScheduled = true;

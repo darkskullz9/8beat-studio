@@ -17,13 +17,19 @@ class SequencerEngine {
     ): void {
         if(this.playing) return;
 
+        const pianoRollState = usePianoRollStore.getState();
+
+        transport.setLoopLengthBars(pianoRollState.patternLengthBars);
+
         this.playing = true;
 
         // Drum sequencer: 16 steps per bar
         transport.scheduleRepeat((time, tick) => {
-            if (tick % TICKS_PER_DRUM_STEP !== 0) return;
+            const barTick = tick % 96;
 
-            const step = tick / TICKS_PER_DRUM_STEP;
+            if (barTick % TICKS_PER_DRUM_STEP !== 0) return;
+
+            const step = barTick / TICKS_PER_DRUM_STEP;
             const tracks = getTracks();
 
             onStepChange(step);

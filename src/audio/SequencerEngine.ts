@@ -10,6 +10,7 @@ const TICKS_PER_DRUM_STEP = 6;
 
 class SequencerEngine {
     private playing = false;
+    private unsubscribePatternLength: (() => void) | null = null;
 
     start(
         getTracks: () => DrumTrack[],
@@ -20,6 +21,12 @@ class SequencerEngine {
         const pianoRollState = usePianoRollStore.getState();
 
         transport.setLoopLengthBars(pianoRollState.patternLengthBars);
+
+        this.unsubscribePatternLength = usePianoRollStore.subscribe((state, previousState) => {
+            if (state.patternLengthBars !== previousState.patternLengthBars) {
+                transport.setLoopLengthBars(state.patternLengthBars);
+            }
+        });
 
         this.playing = true;
 
@@ -79,6 +86,9 @@ class SequencerEngine {
 
     stop(): void {
         if(!this.playing) return;
+
+        this.unsubscribePatternLength?.();
+        this.unsubscribePatternLength = null;
 
         transport.stop();
         transport.clearEvents();

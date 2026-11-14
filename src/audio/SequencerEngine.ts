@@ -6,6 +6,8 @@ import { usePianoRollStore } from "../stores/pianoRollStore";
 
 import type { DrumTrack } from "../types/sequencer";
 
+const TICKS_PER_DRUM_STEP = 6;
+
 class SequencerEngine {
     private playing = false;
 
@@ -17,62 +19,54 @@ class SequencerEngine {
 
         this.playing = true;
 
-        transport.scheduleRepeat((time, step) => {
-                const tracks = getTracks();
+        // Drum sequencer: 16 steps per bar
+        transport.scheduleRepeat((time, tick) => {
+            if (tick % TICKS_PER_DRUM_STEP !== 0) return;
 
-                // Update visual position
-                onStepChange(step);
+            const step = tick / TICKS_PER_DRUM_STEP;
+            const tracks = getTracks();
 
-                // Process each track
-                tracks.forEach((track) => {
+            onStepChange(step);
 
-                    // Ignore muted tracks
-                    if(track.muted) return;
+            tracks.forEach((track) => {
+                if(track.muted) return;
+                if(!track.steps[step]) return;
 
-                    // Ignore inactive steps.
-                    if(!track.steps[step]) return;
+                if(samplerEngine.hasSample(track.id)) {
+                    samplerEngine.trigger(track.id, time);
+                    return;
+                }
 
-                    // Use loaded sample if available.
-                    if(samplerEngine.hasSample(track.id)) {
-                        samplerEngine.trigger(track.id, time);
-                        return;
-                    }
+                switch(track.id) {
+                    case "kick":
+                        audioEngine.playKick(time);
+                        break;
 
-                    // Otherwise use built-in synthesizers
-                    switch(track.id) {
-                        case "kick":
-                            audioEngine.playKick(time);
-                            break;
+                    case "snare":
+                        audioEngine.playSnare(time);
+                        break;
 
-                        case "snare":
-                            audioEngine.playSnare(time);
-                            break;
+                    case "hat":
+                        audioEngine.playHat(time);
+                        break;
+                }
+            });
+        }, "drums"
+    );
 
-                        case "hat":
-                            audioEngine.playHat(time);
-                            break;
-                    }
-                });
-            }, "16n", 16, "drums"
-        );
+    // Piano Roll: 96 ticks per bar
+    transport.scheduleRepeat((time, tick) => {
+            const pianoRollState = usePianoRollStore.getState();
 
-        transport.scheduleRepeat((time, step) => {
-                const notes = usePianoRollStore.getState().notes;
-                const pianoRollState = usePianoRollStore.getState();
+            pianoRollState.setCurrentTick(tick);
 
-                pianoRollState.setCurrentStep(step);
-
-                pianoRollEngine.playStep(
-                    notes, 
-                    step, 
-                    time,
-                    transport.getBpm()
-                );
-            }, 
-            "16n", 
-            16, 
-            "piano-roll"
-        );
+            pianoRollEngine.playTick(
+                pianoRollState.notes,
+                tick, 
+                time,
+                transport.getBpm()
+            );
+        }, "piano-roll");
 
         transport.start();
     }
@@ -83,7 +77,7 @@ class SequencerEngine {
         transport.stop();
         transport.clearEvents();
 
-        usePianoRollStore.getState().setCurrentStep(0);
+        usePianoRollStore.getState().setCurrentTick(0);
 
         this.playing = false;
     }

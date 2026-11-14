@@ -2,7 +2,8 @@ import { create } from "zustand";
 import type { PianoNote } from "../types/pianoRoll";
 
 import {
-    PIANO_ROLL_STEPS,
+    PIANO_ROLL_TICKS_PER_BAR,
+    PIANO_ROLL_DEFAULT_NOTE_DURATION,
     PIANO_ROLL_MIN_PITCH,
     PIANO_ROLL_MAX_PITCH,
     PIANO_ROLL_DEFAULT_VELOCITY,
@@ -10,12 +11,12 @@ import {
 
 interface PianoRollState {
     notes: PianoNote[];
-    currentStep: number;
+    currentTick: number;
 
     addNote: (
         pitch: number,
-        startStep: number,
-        durationSteps?: number,
+        startTick: number,
+        durationTicks?: number,
         velocity?: number
     ) => void;
 
@@ -25,11 +26,11 @@ interface PianoRollState {
         id: string,
         updates: Partial<Pick<
             PianoNote,
-            "pitch" | "startStep" | "durationSteps" | "velocity"
+            "pitch" | "startTick" | "durationTicks" | "velocity"
         >>
     ) => void;
 
-    setCurrentStep: (step: number) => void;
+    setCurrentTick: (tick: number) => void;
     clearNotes: () => void;
 }
 
@@ -37,12 +38,12 @@ let nextNoteId = 1;
 
 export const usePianoRollStore = create<PianoRollState>((set) => ({
     notes: [],
-    currentStep: 0,
+    currentTick: 0,
 
     addNote: (
         pitch,
-        startStep,
-        durationSteps = 1,
+        startTick,
+        durationTicks = PIANO_ROLL_DEFAULT_NOTE_DURATION,
         velocity = PIANO_ROLL_DEFAULT_VELOCITY
     ) => {
         const safePitch = Math.max(
@@ -52,12 +53,18 @@ export const usePianoRollStore = create<PianoRollState>((set) => ({
 
         const safeStart = Math.max(
             0,
-            Math.min(PIANO_ROLL_STEPS - 1, Math.floor(startStep))
+            Math.min(
+                PIANO_ROLL_TICKS_PER_BAR - 1, 
+                Math.floor(startTick)
+            )
         );
 
         const safeDuration = Math.max(
             1,
-            Math.min(PIANO_ROLL_STEPS - safeStart, Math.floor(durationSteps))
+            Math.min(
+                PIANO_ROLL_TICKS_PER_BAR - safeStart, 
+                Math.floor(durationTicks)
+            )
         );
 
         const safeVelocity = Math.max(
@@ -69,7 +76,7 @@ export const usePianoRollStore = create<PianoRollState>((set) => ({
             const alreadyExists = state.notes.some(
                 (note) => 
                     note.pitch === safePitch &&
-                    note.startStep === safeStart
+                    note.startTick === safeStart
             );
 
             if (alreadyExists) return state;
@@ -77,8 +84,8 @@ export const usePianoRollStore = create<PianoRollState>((set) => ({
             const newNote: PianoNote = {
                 id: `note-${nextNoteId++}`,
                 pitch: safePitch,
-                startStep: safeStart,
-                durationSteps: safeDuration,
+                startTick: safeStart,
+                durationTicks: safeDuration,
                 velocity: safeVelocity
             };
 
@@ -103,19 +110,25 @@ export const usePianoRollStore = create<PianoRollState>((set) => ({
 
                 updated.pitch = Math.max(
                     PIANO_ROLL_MIN_PITCH,
-                    Math.min(PIANO_ROLL_MAX_PITCH, Math.round(updated.pitch))
+                    Math.min(
+                        PIANO_ROLL_MAX_PITCH, 
+                        Math.round(updated.pitch)
+                    )
                 );
 
-                updated.startStep = Math.max(
+                updated.startTick = Math.max(
                     0,
-                    Math.min(PIANO_ROLL_STEPS - 1, Math.floor(updated.startStep))
+                    Math.min(
+                        PIANO_ROLL_TICKS_PER_BAR - 1, 
+                        Math.floor(updated.startTick)
+                    )
                 );
 
-                updated.durationSteps = Math.max(
+                updated.durationTicks = Math.max(
                     1,
                     Math.min(
-                        PIANO_ROLL_STEPS - updated.startStep,
-                        Math.floor(updated.durationSteps)
+                        PIANO_ROLL_TICKS_PER_BAR - updated.startTick,
+                        Math.floor(updated.durationTicks)
                     )
                 );
 
@@ -129,16 +142,16 @@ export const usePianoRollStore = create<PianoRollState>((set) => ({
         }));
     },
 
-    setCurrentStep: (step) => {
+    setCurrentTick: (tick) => {
         set({
-            currentStep: Math.max(
+            currentTick: Math.max(
                 0,
-                Math.min(PIANO_ROLL_STEPS - 1, step)
+                Math.min(PIANO_ROLL_TICKS_PER_BAR - 1, tick)
             ),
         });
     },
 
     clearNotes: () => {
-        set({ notes: [], currentStep: 0 });
+        set({ notes: [], currentTick: 0 });
     },
 }));

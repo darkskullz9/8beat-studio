@@ -15,11 +15,8 @@ function TransportTest() {
 
             // Test: Hat on each beat
             transport.scheduleRepeat(
-                (time) => {
-                    audioEngine.playHat(time);
-                },
-                "4n",
-                4,
+                (time) => audioEngine.playHat(time),
+                "transport-test"
             );
 
             transport.start();

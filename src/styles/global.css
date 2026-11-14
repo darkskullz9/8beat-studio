@@ -525,7 +525,7 @@ body {
 .piano-roll-row {
     position: relative;
     display: grid;
-    grid-template-columns: repeat(16, minmax(0, 1fr));
+    grid-template-columns: repeat(96, minmax(0, 1fr));
     height: 28px;
     box-sizing: border-box;
     background: #202029;
@@ -546,8 +546,12 @@ body {
     cursor: crosshair;
 }
 
-.piano-roll-cell:nth-child(4n) {
-    border-right: 2px solid #555565;
+.piano-roll-cell:nth-child(24n) {
+    border-right: 2px solid #777080;
+}
+
+.piano-roll-cell:nth-child(12n) {
+    border-right: 1px solid #55505f;
 }
 
 .piano-roll-cell:hover {
@@ -565,6 +569,7 @@ body {
     padding: 0 5px;
     border: 1px solid #a987ff;
     border-radius: 4px;
+    min-width: 3px;
     background: #7d48f7;
     color: white;
     font-size: 10px;

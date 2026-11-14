@@ -518,8 +518,21 @@ body {
 /* Grid */
 
 .piano-roll-grid {
+    position: relative;
     display: flex;
     flex-direction: column;
+    isolation: isolate;
+}
+
+.piano-roll-playhead {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #FF4F9A;
+    box-shadow: 0 0 6px rgba(255, 79, 154, 0.7);
+    pointer-events: none;
+    z-index: 4;
 }
 
 .piano-roll-row {
@@ -588,16 +601,6 @@ body {
 .piano-roll-note:hover {
     background: #a06fff;
     border-color: #d0baff;
-}
-
-/* Active step */
-.piano-roll-cell.active-step {
-    background: rgba(125, 72, 247, 0.35);
-    box-shadow: inset 0 0 0 1px #7d48f7;
-}
-
-.piano-roll-cell.active-step:hover {
-    background: rgba(125, 72, 247, 0.55);
 }
 
 

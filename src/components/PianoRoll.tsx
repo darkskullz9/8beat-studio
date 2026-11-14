@@ -62,11 +62,25 @@ function isBlackKey(pitch: number): boolean {
     return [1, 3, 6, 8, 10].includes(pitch % 12);
 }
 
+function PianoRollPlayhead({totalTicks}: {totalTicks: number}) {
+    const currentTick = usePianoRollStore((state) => state.currentTick);
+
+    if(currentTick < 0 || currentTick >= totalTicks) {
+        return null;
+    }
+
+    return(
+        <div 
+            className="piano-roll-playhead"
+            style={{left: `${(currentTick / totalTicks) * 100}%`,}}
+        />
+    );
+}
+
 function PianoRoll() {
     const notes = usePianoRollStore((state) => state.notes);
     const addNote = usePianoRollStore((state) => state.addNote);
     const updateNote = usePianoRollStore((state) => state.updateNote);
-    const currentTick = usePianoRollStore((state) => state.currentTick);
     const removeNote = usePianoRollStore((state) => state.removeNote);
     const clearNotes = usePianoRollStore((state) => state.clearNotes);
     const patternLengthBars = usePianoRollStore((state) => state.patternLengthBars);
@@ -365,9 +379,7 @@ function PianoRoll() {
                                         (_, tick) => (
                                             <button
                                                 key={tick}
-                                                className={`piano-roll-cell ${
-                                                    currentTick === tick ? "active-step" : ""
-                                                }`}
+                                                className="piano-roll-cell"
                                                 aria-label={`Add ${getNoteName(pitch)} at tick ${tick + 1}`}
                                                 onClick={() => 
                                                     addNote(
@@ -413,6 +425,8 @@ function PianoRoll() {
                                 </div>
                             );
                         })}
+                        
+                        <PianoRollPlayhead totalTicks={totalTicks} />
                     </div>
                 </div>
             </div>

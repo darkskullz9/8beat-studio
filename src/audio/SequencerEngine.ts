@@ -6,8 +6,11 @@ import { usePianoRollStore } from "../stores/pianoRollStore";
 
 import type { DrumTrack } from "../types/sequencer";
 
+const TICKS_PER_DRUM_STEP = 6;
+
 class SequencerEngine {
     private playing = false;
+    private unsubscribePatternLength: (() => void) | null = null;
 
     start(
         getTracks: () => DrumTrack[],
@@ -15,52 +18,71 @@ class SequencerEngine {
     ): void {
         if(this.playing) return;
 
+        const pianoRollState = usePianoRollStore.getState();
+
+        transport.setLoopLengthBars(pianoRollState.patternLengthBars);
+
+        this.unsubscribePatternLength = usePianoRollStore.subscribe((state, previousState) => {
+            if (state.patternLengthBars !== previousState.patternLengthBars) {
+                transport.setLoopLengthBars(state.patternLengthBars);
+            }
+        });
+
         this.playing = true;
 
-        transport.scheduleRepeat((time, step) => {
-                const tracks = getTracks();
+        // Drum sequencer: 16 steps per bar
+        transport.scheduleRepeat((time, tick) => {
+            const barTick = tick % 96;
 
-                // Update visual position
-                onStepChange(step);
+            if (barTick % TICKS_PER_DRUM_STEP !== 0) return;
 
-                // Process each track
-                tracks.forEach((track) => {
+            const step = barTick / TICKS_PER_DRUM_STEP;
+            const tracks = getTracks();
 
-                    // Ignore muted tracks
-                    if(track.muted) return;
+            onStepChange(step);
 
-                    // Ignore inactive steps.
-                    if(!track.steps[step]) return;
+            tracks.forEach((track) => {
+                if(track.muted) return;
+                if(!track.steps[step]) return;
 
-                    // Use loaded sample if available.
-                    if(samplerEngine.hasSample(track.id)) {
-                        samplerEngine.trigger(track.id, time);
-                        return;
-                    }
+                if(samplerEngine.hasSample(track.id)) {
+                    samplerEngine.trigger(track.id, time);
+                    return;
+                }
 
-                    // Otherwise use built-in synthesizers
-                    switch(track.id) {
-                        case "kick":
-                            audioEngine.playKick(time);
-                            break;
+                switch(track.id) {
+                    case "kick":
+                        audioEngine.playKick(time);
+                        break;
 
-                        case "snare":
-                            audioEngine.playSnare(time);
-                            break;
+                    case "snare":
+                        audioEngine.playSnare(time);
+                        break;
 
-                        case "hat":
-                            audioEngine.playHat(time);
-                            break;
-                    }
-                });
-            }, "16n", 16, "drums"
-        );
+                    case "hat":
+                        audioEngine.playHat(time);
+                        break;
+                }
+            });
+        }, "drums"
+    );
 
-        transport.scheduleRepeat((time, step) => {
-                const notes = usePianoRollStore.getState().notes;
-                pianoRollEngine.playStep(notes, step, time,transport.getBpm());
-            }, "16n", 16, "piano-roll"
-        );
+    // Piano Roll: 96 ticks per bar
+    transport.scheduleRepeat((time, tick) => {
+            const pianoRollState = usePianoRollStore.getState();
+
+            // Update the UI every 16th note instead of every tick.
+            if(tick % 3 === 0) {
+                pianoRollState.setCurrentTick(tick);
+            }
+
+            pianoRollEngine.playTick(
+                pianoRollState.notes,
+                tick, 
+                time,
+                transport.getBpm()
+            );
+        }, "piano-roll");
 
         transport.start();
     }
@@ -68,8 +90,13 @@ class SequencerEngine {
     stop(): void {
         if(!this.playing) return;
 
+        this.unsubscribePatternLength?.();
+        this.unsubscribePatternLength = null;
+
         transport.stop();
         transport.clearEvents();
+
+        usePianoRollStore.getState().setCurrentTick(0);
 
         this.playing = false;
     }

@@ -1,13 +1,14 @@
 import * as Tone from "tone";
 
-type StepCallback = (time: number, step: number) => void;
+type TickCallback = (time: number, tick: number) => void;
 class Transport {
     private bpm = 120;
-    private stepIndex = 0;
-    private loopSteps = 16;
+    private tickIndex = 0;
+    private readonly ticksPerBar = 96;
+    private loopLengthBars = 1;
     private isScheduled = false;
 
-    private callbacks = new Map<string, StepCallback>();
+    private callbacks = new Map<string, TickCallback>();
 
     // Tempo: 40 to 240 BPM
     setBpm(bpm: number): void {
@@ -19,32 +20,36 @@ class Transport {
         return this.bpm;
     }
 
-    // Repeat
-    scheduleRepeat(
-        callback: StepCallback,
-        subdivision = "16n",
-        steps = 16,
-        key = "default",
-    ): void {
-        this.callbacks.set(key, callback);
+    // Manage loop length
+    setLoopLengthBars(bars: number): void {
+        this.loopLengthBars = Math.max(1, Math.floor(bars));
 
-        this.loopSteps = steps;
+        const totalTicks = this.ticksPerBar * this.loopLengthBars;
+
+        this.tickIndex %= totalTicks;
+    }
+
+    // Register a callback executed on every tick
+    scheduleRepeat(callback: TickCallback, key = "default"): void {
+        this.callbacks.set(key, callback);
 
         const toneTransport = Tone.getTransport();
         toneTransport.bpm.value = this.bpm;
 
-        // One clock for all engines
+        // Keep only one shared clock
         if (this.isScheduled) return;
 
         toneTransport.scheduleRepeat((time) => {
-            const currentStep = this.stepIndex;
+            const currentTick = this.tickIndex;
 
             this.callbacks.forEach((listener) => {
-                listener(time, currentStep);
+                listener(time, currentTick);
             });
 
-            this.stepIndex = (this.stepIndex + 1) % this.loopSteps;
-        }, subdivision);
+            const totalTicks = this.ticksPerBar * this.loopLengthBars;
+
+            this.tickIndex = (this.tickIndex + 1) % totalTicks;
+        }, "64t");
 
         this.isScheduled = true;
     }
@@ -59,16 +64,14 @@ class Transport {
 
     stop(): void {
         Tone.getTransport().stop();
-        this.stepIndex = 0;
+        this.tickIndex = 0;
     }
 
-    // Delete scheduled events
     clearEvents(): void {
         Tone.getTransport().cancel(0);
         this.isScheduled = false;
     }
 
-    // Track position
     getPosition(): string {
         return Tone.getTransport().position.toString();
     }

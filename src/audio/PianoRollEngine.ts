@@ -6,6 +6,8 @@ import { PIANO_ROLL_TICKS_PER_BAR } from "../types/pianoRoll";
 
 class PianoRollEngine {
     private synth: Tone.PolySynth;
+    private indexedNotes: PianoNote[] | null = null;
+    private notesByTick = new Map<number, PianoNote[]>();
 
     constructor() {
         this.synth = new Tone.PolySynth(Tone.Synth).connect(
@@ -15,15 +17,37 @@ class PianoRollEngine {
         this.synth.volume.value = -8;
     }
 
+    private getNotesAtTick(
+        notes: PianoNote[],
+        tick: number
+    ): PianoNote[] {
+        // Rebuild the index only when the notes array changes
+        if(notes !== this.indexedNotes) {
+            this.notesByTick.clear();
+
+            notes.forEach((note) => {
+                const existing = this.notesByTick.get(note.startTick);
+
+                if(existing) {
+                    existing.push(note);
+                } else {
+                    this.notesByTick.set(note.startTick, [note]);
+                }
+            });
+
+            this.indexedNotes = notes;
+        }
+
+        return this.notesByTick.get(tick) ?? [];
+    }
+
     playTick(
         notes: PianoNote[],
         tick: number,
         time: number,
         bpm: number
     ): void {
-        const notesToPlay = notes.filter(
-            (note) => note.startTick === tick
-        );
+        const notesToPlay = this.getNotesAtTick(notes, tick);
         
         const tickDuration = 
             (60 / bpm * 4) / PIANO_ROLL_TICKS_PER_BAR
@@ -50,6 +74,8 @@ class PianoRollEngine {
 
     dispose(): void {
         this.synth.dispose();
+        this.notesByTick.clear();
+        this.indexedNotes = null;
     }
 }
 

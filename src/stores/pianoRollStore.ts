@@ -106,44 +106,58 @@ export const usePianoRollStore = create<PianoRollState>((set) => ({
             const totalTicks = 
                 state.patternLengthBars * PIANO_ROLL_TICKS_PER_BAR;
 
-            return {
-                notes: state.notes.map((note) => {
-                    if (note.id !== id) return note;
-    
-                    const updated = { ...note, ...updates };
-    
-                    updated.pitch = Math.max(
-                        PIANO_ROLL_MIN_PITCH,
-                        Math.min(
-                            PIANO_ROLL_MAX_PITCH, 
-                            Math.round(updated.pitch)
-                        )
-                    );
-    
-                    updated.startTick = Math.max(
-                        0,
-                        Math.min(
-                            totalTicks - 1, 
-                            Math.floor(updated.startTick)
-                        )
-                    );
-    
-                    updated.durationTicks = Math.max(
-                        1,
-                        Math.min(
-                            totalTicks - updated.startTick,
-                            Math.floor(updated.durationTicks)
-                        )
-                    );
-    
-                    updated.velocity = Math.max(
-                        0,
-                        Math.min(127, Math.round(updated.velocity))
-                    );
-    
-                    return updated;
-                })
-            };
+            const noteIndex = state.notes.findIndex(
+                (note) => note.id === id
+            );
+
+            if(noteIndex === -1) return state;
+
+            const note = state.notes[noteIndex];
+            const updated = {...note, ...updates};
+
+            updated.pitch = Math.max(
+                PIANO_ROLL_MIN_PITCH,
+                Math.min(
+                    PIANO_ROLL_MAX_PITCH,
+                    Math.round(updated.pitch)
+                )
+            );
+
+            updated.startTick = Math.max(
+                0,
+                Math.min(
+                    totalTicks - 1,
+                    Math.floor(updated.startTick)
+                )
+            );
+
+            updated.durationTicks = Math.max(
+                1,
+                Math.min(
+                    totalTicks - updated.startTick,
+                    Math.floor(updated.durationTicks)
+                )
+            );
+
+            updated.velocity = Math.max(
+                0,
+                Math.min(127, Math.round(updated.velocity))
+            );
+
+            // No changes, no update
+            if(
+                note.pitch === updated.pitch &&
+                note.startTick === updated.startTick &&
+                note.durationTicks === updated.durationTicks &&
+                note.velocity === updated.velocity
+            ) {
+                return state;
+            }
+
+            const notes = [...state.notes];
+            notes[noteIndex] = updated;
+
+            return {notes};
         });
     },
 
@@ -152,12 +166,16 @@ export const usePianoRollStore = create<PianoRollState>((set) => ({
             const totalTicks =
                 state.patternLengthBars * PIANO_ROLL_TICKS_PER_BAR;
 
-            return {
-                currentTick: Math.max(
-                    0,
-                    Math.min(totalTicks - 1, Math.floor(tick))
-                )
-            };
+            const nextTick = Math.max(
+                0,
+                Math.min(totalTicks -1, Math.floor(tick))
+            );
+
+            if(nextTick === state.currentTick) {
+                return state;
+            }
+
+            return {currentTick: nextTick};
         });
     },
 

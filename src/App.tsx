@@ -3,6 +3,7 @@
 import StepSequencer from "./components/StepSequencer";
 import Sampler from "./components/Sampler/Sampler";
 import PianoRoll from "./components/PianoRoll";
+import Playlist from "./components/Playlist/Playlist";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
       <Sampler />
       <StepSequencer />
       <PianoRoll />
+      <Playlist />
     </main>
   );
 }

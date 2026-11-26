@@ -29,7 +29,7 @@ export interface DrumPattern {
 export interface MelodicPattern {
     id: string;
     name: string;
-    type: "melody";
+    type: "melodic";
     lengthTicks: number;
     tracks: PianoNote[];
 }

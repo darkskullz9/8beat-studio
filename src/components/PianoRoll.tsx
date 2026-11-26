@@ -1,5 +1,6 @@
+import React, { useRef, useState } from "react";
 import { usePianoRollStore } from "../stores/pianoRollStore";
-
+import { shallow, useShallow } from "zustand/shallow";
 import {
     PIANO_ROLL_TICKS_PER_BAR,
     PIANO_ROLL_MIN_PITCH,
@@ -8,12 +9,7 @@ import {
     PIANO_ROLL_PATTERN_LENGTHS,
 } from "../types/pianoRoll";
 
-import type { 
-    PianoNote, 
-    PianoRollPatternLength, 
-} from "../types/pianoRoll";
-
-import React, { useRef, useState } from "react";
+import type { PianoNote, PianoRollPatternLength } from "../types/pianoRoll";
 
 const NOTE_NAMES = [
     "C", "C#", "D", "D#", "E", "F", 
@@ -76,6 +72,85 @@ function PianoRollPlayhead({totalTicks}: {totalTicks: number}) {
         />
     );
 }
+
+interface PianoRollRowProps {
+    pitch: number;
+    totalTicks: number;
+    selectedNoteIds: string[];
+    snapTick: (tick: number) => number;
+    handleNotePointerDown: (
+        event: React.PointerEvent<HTMLElement>,
+        note: PianoNote,
+        modes: DragMode
+    ) => void;
+}
+
+const PianoRollRow = React.memo(function PianoRollRow({
+    pitch,
+    totalTicks,
+    selectedNoteIds,
+    snapTick,
+    handleNotePointerDown,
+}: PianoRollRowProps) {
+    const rowNotes = usePianoRollStore(
+        useShallow((state) => 
+            state.notes.filter((note) => note.pitch === pitch)
+        )
+    );
+
+    const addNote = usePianoRollStore((state) => state.addNote);
+
+    return (
+        <div
+            className="piano-roll-row"
+            style={{
+                gridTemplateColumns: `repeat(${totalTicks}, minmax(0, 1fr))`,
+            }}
+        >
+            {Array.from({length: totalTicks}, (_, tick) => (
+                <button
+                    key={tick} 
+                    className="piano-roll-cell" 
+                    aria-label={`Add ${getNoteName(pitch)} at tick ${tick + 1}`}
+                    onClick={() => 
+                        addNote(
+                            pitch,
+                            snapTick(tick),
+                            PIANO_ROLL_DEFAULT_NOTE_DURATION
+                        )
+                    }  
+                />
+            ))}
+
+            {rowNotes.map((note) => (
+                <button 
+                    key={note.id} 
+                    className={`piano-roll-note ${
+                        selectedNoteIds.includes(note.id) ? "selected" : ""
+                    }`} 
+                    style={{
+                        left: `${(note.startTick / totalTicks) * 100}%`,
+                        width: `${(note.durationTicks / totalTicks) * 100}%`,
+                    }} 
+                    title={`${getNoteName(note.pitch)} - Velocity: ${note.velocity}`} 
+                    onPointerDown={(event) => 
+                        handleNotePointerDown(event, note, "move")
+                    }
+                >
+                    {getNoteName(note.pitch)}
+
+                    <span 
+                        className="piano-roll-resize-handle" 
+                        onPointerDown={(event) => {
+                            event.stopPropagation();
+                            handleNotePointerDown(event, note, "resize");
+                        }}
+                    />
+                </button>
+            ))}
+        </div>
+    );
+});
 
 function PianoRoll() {
     const notes = usePianoRollStore((state) => state.notes);

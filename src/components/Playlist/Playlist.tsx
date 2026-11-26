@@ -18,12 +18,20 @@ function Playlist() {
     const removeClip = usePlaylistStore((state) => state.removeClip);
 
     const moveClip = usePlaylistStore((state) => state.moveClip);
+    const resizeClip = usePlaylistStore((state) => state.resizeClip);
 
     const dragRef = useRef<{
         clipId: string;
         pointerId: number;
         startX: number;
         startTick: number;
+    } | null>(null);
+
+    const resizeRef = useRef<{
+        clipId: string;
+        pointerId: number;
+        startX: number;
+        startDuration: number;
     } | null>(null);
 
     const handleClipPointerDown = (
@@ -72,6 +80,59 @@ function Playlist() {
         dragRef.current = null;
 
         if(event.currentTarget.hasPointerCapture(event.pointerId)) {
+            event.currentTarget.releasePointerCapture(event.pointerId);
+        }
+    };
+
+    const handleResizePointerDown = (
+        event: React.PointerEvent<HTMLDivElement>,
+        clipId: string,
+        durationTicks: number,
+    ) => {
+        if (event.button !== 0) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        resizeRef.current = {
+            clipId,
+            pointerId: event.pointerId,
+            startX: event.clientX,
+            startDuration: durationTicks,
+        };
+
+        event.currentTarget.setPointerCapture(event.pointerId);
+    };
+
+    const handleResizePointerMove = (
+        event: React.PointerEvent<HTMLDivElement>,
+    ) => {
+        const resize = resizeRef.current;
+
+        if (!resize || resize.pointerId !== event.pointerId) return;
+
+        const deltaX = event.clientX - resize.startX;
+        const deltaTicks = (deltaX / BAR_WIDTH) * TICKS_PER_BAR;
+
+        const rawDuration = resize.startDuration + deltaTicks;
+        const snapTicks = 6;
+
+        const snappedDuration = Math.max(
+            snapTicks,
+            Math.round(rawDuration / snapTicks) * snapTicks,
+        );
+
+        resizeClip(resize.clipId, snappedDuration);
+    };
+
+    const handleResizePointerUp = (
+        event: React.PointerEvent<HTMLDivElement>,
+    ) => {
+        if (resizeRef.current?.pointerId !== event.pointerId) return;
+
+        resizeRef.current = null;
+
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
             event.currentTarget.releasePointerCapture(event.pointerId);
         }
     };
@@ -126,28 +187,11 @@ function Playlist() {
                 </div>
 
                 <div className="playlist-actions">
-                    {/*<button onClick={() => addTrack("drums")}>
+                    <button onClick={() => addTrack("drums")}>
                         + Drums
                     </button>
 
                     <button onClick={() => addTrack("melodic")}>
-                        + Instrument
-                    </button>*/}
-                    <button
-                        onClick={() => {
-                            console.log("CLICK DRUMS");
-                            addTrack("drums");
-                        }}
-                    >
-                        + Drums
-                    </button>
-
-                    <button
-                        onClick={() => {
-                            console.log("CLICK INSTRUMENT");
-                            addTrack("melodic");
-                        }}
-                    >
                         + Instrument
                     </button>
                 </div>
@@ -271,6 +315,21 @@ function Playlist() {
                                                 <span>
                                                     {pattern.name}
                                                 </span>
+
+                                                <div
+                                                    className="playlist-clip-resize"
+                                                    onPointerDown={(event) =>
+                                                        handleResizePointerDown(
+                                                            event,
+                                                            clip.id,
+                                                            clip.durationTicks,
+                                                        )
+                                                    }
+                                                    onPointerMove={handleResizePointerMove}
+                                                    onPointerUp={handleResizePointerUp}
+                                                    onPointerCancel={handleResizePointerUp}
+                                                    title="Resize clip"
+                                                />
 
                                                 <button
                                                     onPointerDown={(event) => event.stopPropagation()} 

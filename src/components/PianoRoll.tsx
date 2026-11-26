@@ -260,11 +260,10 @@ function PianoRoll() {
         const grid = pianoRollGridRef.current;
         if (!grid) return;
 
-        const tickWidth = grid.clientWidth / totalTicks;
         const rowHeight = 28;
 
         const rawDeltaTicks = Math.round(
-            (event.clientX - dragState.initialX) / tickWidth
+            ((event.clientX - dragState.initialX) / grid.clientWidth) * totalTicks
         );
         
         const deltaTicks = snapTick(rawDeltaTicks);

@@ -1,3 +1,5 @@
+import { useRef } from "react";
+import { generateId } from "../../utils/id";
 import { usePlaylistStore } from "../../stores/playlistStore";
 
 const TICKS_PER_BAR = 96;
@@ -15,12 +17,71 @@ function Playlist() {
     const removeTrack = usePlaylistStore((state) => state.removeTrack);
     const removeClip = usePlaylistStore((state) => state.removeClip);
 
+    const moveClip = usePlaylistStore((state) => state.moveClip);
+
+    const dragRef = useRef<{
+        clipId: string;
+        pointerId: number;
+        startX: number;
+        startTick: number;
+    } | null>(null);
+
+    const handleClipPointerDown = (
+        event: React.PointerEvent<HTMLDivElement>,
+        clipId: string,
+        startTick: number,
+    ) => {
+        if(event.button !== 0) return;
+
+        event.preventDefault();
+
+        dragRef.current = {
+            clipId,
+            pointerId: event.pointerId,
+            startX: event.clientX,
+            startTick,
+        };
+
+        event.currentTarget.setPointerCapture(event.pointerId);
+    };
+
+    const handleClipPointerMove = (
+        event: React.PointerEvent<HTMLDivElement>,
+    ) => {
+        const drag = dragRef.current;
+
+        if(!drag || drag.pointerId !== event.pointerId) return;
+
+        const deltaX = event.clientX - drag.startX;
+        const deltaTicks = (deltaX / BAR_WIDTH) * TICKS_PER_BAR;
+        const rawTick = drag.startTick + deltaTicks;
+        const snapTick = 6;
+        const snappedTick = Math.max(
+            0,
+            Math.round(rawTick / snapTick) * snapTick,
+        );
+
+        moveClip(drag.clipId, snappedTick);
+    };
+
+    const handleClipPointerUp = (
+        event: React.PointerEvent<HTMLDivElement>,
+    ) => {
+        if(dragRef.current?.pointerId !== event.pointerId) return;
+
+        dragRef.current = null;
+
+        if(event.currentTarget.hasPointerCapture(event.pointerId)) {
+            event.currentTarget.releasePointerCapture(event.pointerId);
+        }
+    };
+
     const createPattern = (trackId: string) => {
         const track = tracks.find((item) => item.id === trackId);
 
         if (!track) return;
 
-        const patternId = crypto.randomUUID();
+        const patternId = generateId();
 
         const pattern =
             track.type === "drums"
@@ -65,11 +126,28 @@ function Playlist() {
                 </div>
 
                 <div className="playlist-actions">
-                    <button onClick={() => addTrack("drums")}>
+                    {/*<button onClick={() => addTrack("drums")}>
                         + Drums
                     </button>
 
                     <button onClick={() => addTrack("melodic")}>
+                        + Instrument
+                    </button>*/}
+                    <button
+                        onClick={() => {
+                            console.log("CLICK DRUMS");
+                            addTrack("drums");
+                        }}
+                    >
+                        + Drums
+                    </button>
+
+                    <button
+                        onClick={() => {
+                            console.log("CLICK INSTRUMENT");
+                            addTrack("melodic");
+                        }}
+                    >
                         + Instrument
                     </button>
                 </div>
@@ -176,31 +254,33 @@ function Playlist() {
                                                     track.type === "drums"
                                                         ? "playlist-clip-drums"
                                                         : "playlist-clip-melodic"
-                                                }`}
-                                                key={clip.id}
+                                                }`} 
+                                                key={clip.id} 
                                                 style={{
-                                                    left:
-                                                        (clip.startTick /
-                                                            TICKS_PER_BAR) *
-                                                        BAR_WIDTH,
-                                                    width:
-                                                        (clip.durationTicks /
-                                                            TICKS_PER_BAR) *
-                                                        BAR_WIDTH,
-                                                }}
-                                                title={pattern.name}
+                                                    left: (clip.startTick / TICKS_PER_BAR) * BAR_WIDTH, 
+                                                    width: (clip.durationTicks / TICKS_PER_BAR) * BAR_WIDTH,
+                                                }} 
+                                                title={pattern.name} 
+                                                onPointerDown={
+                                                    (event) => handleClipPointerDown(event, clip.id, clip.startTick)
+                                                } 
+                                                onPointerMove={handleClipPointerMove} 
+                                                onPointerUp={handleClipPointerUp}
+                                                onPointerCancel={handleClipPointerUp}
                                             >
                                                 <span>
                                                     {pattern.name}
                                                 </span>
 
                                                 <button
-                                                    onClick={() =>
-                                                        removeClip(clip.id)
-                                                    }
+                                                    onPointerDown={(event) => event.stopPropagation()} 
+                                                    onClick={(event) => {
+                                                        event.stopPropagation();
+                                                        removeClip(clip.id);
+                                                    }} 
                                                     title="Remove clip"
                                                 >
-                                                    ×
+                                                    x
                                                 </button>
                                             </div>
                                         );

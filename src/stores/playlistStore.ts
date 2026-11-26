@@ -1,3 +1,4 @@
+import { generateId } from "../utils/id";
 import { create } from "zustand";
 import type {
     PlaylistTrack,
@@ -33,7 +34,7 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
     patterns: [],
 
     addTrack: (type, name) => {
-        const trackId = crypto.randomUUID();
+        const trackId = generateId();
 
         const trackCount = get().tracks.filter(
             (track) => track.type === type,
@@ -96,7 +97,7 @@ export const usePlaylistStore = create<PlaylistStore>((set, get) => ({
             return null;
         }
 
-        const clipId = crypto.randomUUID();
+        const clipId = generateId();
 
         set({
             clips: [

@@ -1025,3 +1025,15 @@ body {
         flex-wrap: wrap;
     }
 }
+
+/* Playlist - Clip Drag */
+
+.playlist-clip {
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+}
+
+.playlist-clip:active {
+    cursor: grabbing;
+}

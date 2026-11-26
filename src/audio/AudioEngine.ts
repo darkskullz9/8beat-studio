@@ -4,7 +4,8 @@ class AudioEngine {
     private initialized = false;
 
     // Main audio output
-    private master = new Tone.Gain(0.8).toDestination();
+    private limiter = new Tone.Limiter(-1).toDestination();
+    private master = new Tone.Gain(0.8).connect(this.limiter);
 
     // Test synth
     private kick = new Tone.MembraneSynth().connect(this.master);
@@ -76,7 +77,7 @@ class AudioEngine {
         this.snare.dispose();
         this.hat.dispose();
         this.master.dispose();
-
+        this.limiter.dispose();
         this.initialized = false;
     }
 }

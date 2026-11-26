@@ -1,6 +1,6 @@
-import React, { useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { usePianoRollStore } from "../stores/pianoRollStore";
-import { shallow, useShallow } from "zustand/shallow";
+import { useShallow } from "zustand/shallow";
 import {
     PIANO_ROLL_TICKS_PER_BAR,
     PIANO_ROLL_MIN_PITCH,
@@ -154,7 +154,6 @@ const PianoRollRow = React.memo(function PianoRollRow({
 
 function PianoRoll() {
     const notes = usePianoRollStore((state) => state.notes);
-    const addNote = usePianoRollStore((state) => state.addNote);
     const updateNote = usePianoRollStore((state) => state.updateNote);
     const removeNote = usePianoRollStore((state) => state.removeNote);
     const clearNotes = usePianoRollStore((state) => state.clearNotes);
@@ -169,63 +168,83 @@ function PianoRoll() {
     const [selectedNoteIds, setSelectedNoteIds] = useState<string[]>([]);
     const [snapDivision, setSnapDivision] = useState<SnapDivision>(6);
 
+    const snapTick = useCallback(
+        (tick: number): number => {
+            return Math.round(tick / snapDivision) * snapDivision;
+        },
+        [snapDivision]
+    );
+
     const selectedNote = notes.find(
         (note) => note.id === selectedNoteId
     );
 
     const pianoRollGridRef = useRef<HTMLDivElement>(null);
 
-    const handleNotePointerDown = (
-        event: React.PointerEvent<HTMLElement>,
-        note: PianoNote,
-        mode: DragMode
-    ) => {
-        event.preventDefault();
-        event.stopPropagation();
-
-        pianoRollGridRef.current?.setPointerCapture(event.pointerId);
-
-        if (event.shiftKey) {
-            const alreadySelected = selectedNoteIds.includes(note.id);
-
-            const nextSelection = alreadySelected
-                ? selectedNoteIds.filter((id) => id !== note.id)
-                : [...selectedNoteIds, note.id];
-
+    const handleNotePointerDown = useCallback(
+        (
+            event: React.PointerEvent<HTMLElement>,
+            note: PianoNote,
+            mode: DragMode
+        ) => {
+            event.preventDefault();
+            event.stopPropagation();
+        
+            pianoRollGridRef.current?.setPointerCapture(event.pointerId);
+        
+            if (event.shiftKey) {
+                const alreadySelected = selectedNoteIds.includes(note.id);
+        
+                const nextSelection = alreadySelected
+                    ? selectedNoteIds.filter((id) => id !== note.id)
+                    : [...selectedNoteIds, note.id];
+        
+                setSelectedNoteIds(nextSelection);
+                setSelectedNoteId(alreadySelected
+                    ? nextSelection[nextSelection.length - 1] ?? null
+                    : note.id
+                );
+        
+                setDragState(null);
+                return;
+            }
+        
+            const nextSelection = selectedNoteIds.includes(note.id)
+                ? selectedNoteIds
+                : [note.id];
+        
             setSelectedNoteIds(nextSelection);
-            setSelectedNoteId(alreadySelected
-                ? nextSelection[nextSelection.length - 1] ?? null
-                : note.id
-            );
-
-            setDragState(null);
-            return;
-        }
-
-        const nextSelection = selectedNoteIds.includes(note.id)
-            ? selectedNoteIds
-            : [note.id]
-
-        setSelectedNoteIds(nextSelection);
-        setSelectedNoteId(note.id);
-
-        const notesToDrag = mode === "resize"
-            ? [note]
-            : notes.filter((item) => nextSelection.includes(item.id));
-
-        setDragState({
-            noteId: note.id,
-            mode,
-            initialX: event.clientX,
-            initialY: event.clientY,
-            initialNotes: notesToDrag.map((item) => ({
-                id: item.id,
-                pitch: item.pitch,
-                startTick: item.startTick,
-                durationTicks: item.durationTicks,
-            })),
-        });
-    };
+            setSelectedNoteId(note.id);
+        
+            const currentNotes = usePianoRollStore.getState().notes;
+        
+            const notesToDrag = mode === "resize"
+                ? [note]
+                : currentNotes.filter(
+                    (item) => nextSelection.includes(item.id)
+                );
+        
+            setDragState({
+                noteId: note.id,
+                mode,
+                initialX: event.clientX,
+                initialY: event.clientY,
+                initialNotes: notesToDrag.map((item) => ({
+                    id: item.id,
+                    pitch: item.pitch,
+                    startTick: item.startTick,
+                    durationTicks: item.durationTicks,
+                })),
+            });
+        },
+        [
+            selectedNoteIds,
+            setSelectedNoteIds,
+            setSelectedNoteId,
+            setDragState,
+            pianoRollGridRef,
+        ]
+    );
 
     const handlePointerMove = (event: React.PointerEvent<HTMLElement>) => {
         if (!dragState) return;
@@ -313,10 +332,6 @@ function PianoRoll() {
         setDragState(null);
     };
 
-    const snapTick = (tick: number): number => {
-        return Math.round(tick / snapDivision) * snapDivision;
-    };
-    
     return (
         <section className="piano-roll">
             <div className="piano-roll-header">
@@ -435,71 +450,16 @@ function PianoRoll() {
                         onPointerCancel={handlePointerUp}
                         onLostPointerCapture={handlePointerUp}
                     >
-                        {pitches.map((pitch) => {
-                            const rowNotes = notes.filter(
-                                (note) => note.pitch === pitch
-                            );
-
-                            return (
-                                <div
-                                    key={pitch}
-                                    className="piano-roll-row"
-                                    style={{
-                                        gridTemplateColumns: `repeat(${totalTicks}, minmax(0, 1fr))`
-                                    }}
-                                >
-                                    {/* Empty grid cells */}
-                                    {Array.from(
-                                        { length: totalTicks },
-                                        (_, tick) => (
-                                            <button
-                                                key={tick}
-                                                className="piano-roll-cell"
-                                                aria-label={`Add ${getNoteName(pitch)} at tick ${tick + 1}`}
-                                                onClick={() => 
-                                                    addNote(
-                                                        pitch, 
-                                                        snapTick(tick), 
-                                                        PIANO_ROLL_DEFAULT_NOTE_DURATION
-                                                    )
-                                                }
-                                            />
-                                        )
-                                    )}
-
-                                    {/* Existing notes */}
-                                    {rowNotes.map((note) => (
-                                        <button
-                                            key={note.id}
-                                            className={`piano-roll-note ${
-                                                selectedNoteIds.includes(note.id) ? "selected" : ""
-                                            }`}
-                                            style={{
-                                                left: `${(note.startTick / totalTicks) * 100}%`,
-                                                width: `${(note.durationTicks / totalTicks) * 100}%`,
-                                            }}
-                                            title={`${getNoteName(note.pitch)} - Velocity: ${note.velocity}`}
-                                            onPointerDown={(event) => handleNotePointerDown(
-                                                event, 
-                                                note,
-                                                "move"
-                                            )}
-
-                                        >
-                                            {getNoteName(note.pitch)}
-
-                                            <span 
-                                                className="piano-roll-resize-handle"
-                                                onPointerDown={(event) => {
-                                                    event.stopPropagation();
-                                                    handleNotePointerDown(event, note, "resize");
-                                                }}
-                                            />
-                                        </button>
-                                    ))}
-                                </div>
-                            );
-                        })}
+                        {pitches.map((pitch) => (
+                            <PianoRollRow 
+                                key={pitch} 
+                                pitch={pitch} 
+                                totalTicks={totalTicks} 
+                                selectedNoteIds={selectedNoteIds} 
+                                snapTick={snapTick} 
+                                handleNotePointerDown={handleNotePointerDown}                             
+                            />
+                        ))}
                         
                         <PianoRollPlayhead totalTicks={totalTicks} />
                     </div>

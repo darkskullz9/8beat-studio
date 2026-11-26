@@ -104,23 +104,30 @@ const PianoRollRow = React.memo(function PianoRollRow({
         <div
             className="piano-roll-row"
             style={{
-                gridTemplateColumns: `repeat(${totalTicks}, minmax(0, 1fr))`,
+                backgroundSize: `
+                    ${100 / totalTicks}% 100%,
+                    ${1200 / totalTicks}% 100%,
+                    ${9600 / totalTicks}% 100%
+                `
+            }} 
+            onClick={(event) => {
+                const rect = event.currentTarget.getBoundingClientRect();
+                const position = (event.clientX - rect.left) / rect.width;
+
+                const rawTick = Math.floor(position * totalTicks);
+                const startTick = clamp(
+                    snapTick(rawTick),
+                    0,
+                    totalTicks - PIANO_ROLL_DEFAULT_NOTE_DURATION
+                );
+
+                addNote(
+                    pitch,
+                    startTick,
+                    PIANO_ROLL_DEFAULT_NOTE_DURATION
+                );
             }}
         >
-            {Array.from({length: totalTicks}, (_, tick) => (
-                <button
-                    key={tick} 
-                    className="piano-roll-cell" 
-                    aria-label={`Add ${getNoteName(pitch)} at tick ${tick + 1}`}
-                    onClick={() => 
-                        addNote(
-                            pitch,
-                            snapTick(tick),
-                            PIANO_ROLL_DEFAULT_NOTE_DURATION
-                        )
-                    }  
-                />
-            ))}
 
             {rowNotes.map((note) => (
                 <button 
@@ -133,6 +140,7 @@ const PianoRollRow = React.memo(function PianoRollRow({
                         width: `${(note.durationTicks / totalTicks) * 100}%`,
                     }} 
                     title={`${getNoteName(note.pitch)} - Velocity: ${note.velocity}`} 
+                    onClick={(event) => event.stopPropagation()} 
                     onPointerDown={(event) => 
                         handleNotePointerDown(event, note, "move")
                     }

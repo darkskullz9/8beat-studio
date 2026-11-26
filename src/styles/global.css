@@ -537,44 +537,26 @@ body {
 
 .piano-roll-row {
     position: relative;
-    display: grid;
     height: 28px;
     box-sizing: border-box;
-    background: #202029;
     border-bottom: 1px solid #30303a;
+    background: #202029;
+    background-image:
+    	linear-gradient(to right, #353540 1px, transparent 1px),
+    	linear-gradient(to right, #55505f 1px, transparent 1px),
+    	linear-gradient(to right, #a987ff 2px, transparent 2px)
+	;
+
+	background-repeat: repeat;
+	cursor: crosshair;    
 }
 
 .piano-roll-row:nth-child(12n + 1) {
     background: #292934;
 }
 
-.piano-roll-cell {
-    min-width: 0;
-    padding: 0;
-    border: none;
-    border-right: 1px solid #353540;
-    border-radius: 0;
-    background: transparent;
-    cursor: crosshair;
-}
-
-/* Subdivisions separators */
-.piano-roll-cell:nth-child(12n) {
-    border-right: 1px solid #55505f;
-}
-
-/* Times signatures */
-.piano-roll-cell:nth-child(24n) {
-    border-right: 2px solid #777080;
-}
-
-/* Time signature separators */
-.piano-roll-cell:nth-child(96n) {
-    border-right: 3px solid #a987ff;
-}
-
-.piano-roll-cell:hover {
-    background: rgba(125, 72, 247, 0.25);
+.piano-roll-row:hover {
+	background-color: #30283d;
 }
 
 /* MIDI notes */

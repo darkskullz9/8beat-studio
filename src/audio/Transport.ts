@@ -1,14 +1,31 @@
 import * as Tone from "tone";
 
 type TickCallback = (time: number, tick: number) => void;
+
 class Transport {
     private bpm = 120;
     private tickIndex = 0;
+
     private readonly ticksPerBar = 96;
+    private readonly ticksPerCallback = 3;
+
     private loopLengthBars = 1;
     private isScheduled = false;
 
     private callbacks = new Map<string, TickCallback>();
+    private tickListeners = new Set<(tick: number) => void>();
+
+    subscribeToTicks(listener: (tick: number) => void): () => void {
+        this.tickListeners.add(listener);
+
+        return () => {
+            this.tickListeners.delete(listener);
+        };
+    }
+
+    private notifyTickListeners(tick: number): void {
+        this.tickListeners.forEach((listener) => listener(tick));
+    }
 
     // Tempo: 40 to 240 BPM
     setBpm(bpm: number): void {
@@ -46,10 +63,12 @@ class Transport {
                 listener(time, currentTick);
             });
 
+            this.notifyTickListeners(currentTick);
+
             const totalTicks = this.ticksPerBar * this.loopLengthBars;
 
-            this.tickIndex = (this.tickIndex + 1) % totalTicks;
-        }, "64t");
+            this.tickIndex = (this.tickIndex + this.ticksPerCallback) % totalTicks;
+        }, "32n");
 
         this.isScheduled = true;
     }
@@ -65,6 +84,7 @@ class Transport {
     stop(): void {
         Tone.getTransport().stop();
         this.tickIndex = 0;
+        this.notifyTickListeners(0);
     }
 
     clearEvents(): void {

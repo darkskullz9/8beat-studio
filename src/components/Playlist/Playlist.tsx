@@ -1,4 +1,5 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { transport } from "../../audio/Transport";
 import { generateId } from "../../utils/id";
 import { usePlaylistStore } from "../../stores/playlistStore";
 
@@ -33,6 +34,12 @@ function Playlist() {
         startX: number;
         startDuration: number;
     } | null>(null);
+
+    const [currentTick, setCurrentTick] = useState(0);
+
+    useEffect(() => {
+        return transport.subscribeToTicks(setCurrentTick);
+    }, []);
 
     const handleClipPointerDown = (
         event: React.PointerEvent<HTMLDivElement>,
@@ -272,6 +279,13 @@ function Playlist() {
                                     width: VISIBLE_BARS * BAR_WIDTH,
                                 }}
                             >
+                                <div
+                                    className="playlist-playhead"
+                                    style={{
+                                        left: (currentTick / TICKS_PER_BAR) * BAR_WIDTH,
+                                    }}
+                                />
+
                                 <div
                                     className="playlist-grid"
                                     style={{
